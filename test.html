@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>67%</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #fff; overflow: hidden; }
+
+  #container {
+    width: 100vw; height: 100vh;
+    position: relative; overflow: visible;
+  }
+
+  #grid-canvas {
+    display: none;
+  }
+
+  .color-box {
+    position: absolute;
+    border: 2px dashed;
+    border-radius: 4px;
+    pointer-events: none;
+    will-change: width;
+  }
+  #static-box { display: none; }
+  #color-box-2 {
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(15,79,50,0.0375) 19px, rgba(15,79,50,0.0375) 20px),
+      repeating-linear-gradient(90deg, transparent, transparent 95px, rgba(15,79,50,0.0375) 95px, rgba(15,79,50,0.0375) 96px),
+      #0F4F32;
+    border-color: #A5D6A7; z-index: 3;
+  }
+  #color-box-3 { background: #0F4F32; border-color: #A5D6A7; z-index: 5; position: relative; }
+
+  #box3-noise {
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 256px 256px;
+    pointer-events: none;
+  }
+
+  #box3-gradient {
+    display: none;
+  }
+  #box3-gradient.animate {
+    animation: gradRise 2s ease-out forwards;
+  }
+  @keyframes gradRise {
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* Clipping stage — the number rises up through the grid lines */
+  #number-stage {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+
+  /* Number wrapper */
+  #number-clip {
+    overflow: visible;
+    line-height: 1;
+    position: relative;
+  }
+
+  #chars {
+    display: flex;
+    align-items: baseline;
+    will-change: transform;
+  }
+
+  .ch {
+    display: inline-block;
+    font-family: 'Times New Roman', serif;
+    font-weight: 900;
+    font-size: clamp(148px, 29.69vw, 446px);
+    color: #1a1a1a;
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+  }
+
+  #cell-box {
+    position: absolute;
+    z-index: 15;
+    display: inline-block;
+    overflow: hidden;
+    border: 2px dashed #1a8a5c;
+    padding: 10px 20px;
+    opacity: 0;
+    width: 0;
+    will-change: width, opacity;
+    background: rgba(255,255,255,0.85);
+  }
+
+  #cell-box-text {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 34px;
+    font-weight: 400;
+    color: #1a1a1a;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    display: inline-block;
+    will-change: transform;
+  }
+
+  #cell-box-handle {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 9px;
+    height: 9px;
+    background: #1a8a5c;
+  }
+
+  #subtitle-clip {
+    overflow: visible;
+    margin-top: 24px;
+  }
+
+  #subtitle {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 51px;
+    font-weight: 400;
+    color: #1a1a1a;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    transform: translateY(100%);
+    will-change: transform;
+    opacity: 0;
+  }
+
+
+  .sub-word {
+    display: inline-block;
+    will-change: transform;
+  }
+
+  #scroll-zone {
+    position: absolute; inset: 0; z-index: 30;
+  }
+
+  #scrubber-track {
+    position: absolute;
+    left: calc(50% - 235px);
+    transform: translateX(-50%);
+    width: 490px;
+    z-index: 60;
+    cursor: grab;
+    overflow: hidden;
+  }
+  #scrubber-track:active { cursor: grabbing; }
+
+  #expand-btn {
+    position: absolute;
+    background: #0F4F32;
+    cursor: pointer;
+    z-index: 60;
+    transition: background 0.2s ease;
+  }
+  #expand-btn:hover {
+    background: #000;
+  }
+  #expand-btn:hover svg line {
+    stroke: #fff;
+  }
+
+  #click-banner {
+    position: absolute;
+    z-index: 60;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  #click-banner-inner {
+    display: inline-block;
+    white-space: nowrap;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: #000;
+    letter-spacing: 0.05em;
+    animation: bannerScroll 24s linear infinite;
+  }
+  @keyframes bannerScroll {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+  }
+
+  #scrubber-bar {
+    position: absolute;
+    left: 0; top: 0;
+    height: 100%;
+    width: 140px;
+    background: #0F4F32;
+    border: none;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    cursor: grab;
+    z-index: 61;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  #scrubber-bar:active { cursor: grabbing; }
+
+  #scrubber-drag-handle {
+    position: absolute;
+    left: 140px;
+    top: 0;
+    width: 6px;
+    height: 100%;
+    background: #73D961;
+    cursor: grab;
+    z-index: 62;
+    display: flex;
+    align-items: center;
+  }
+  #scrubber-close {
+    position: absolute;
+    right: 10px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 18px;
+    color: #73D961;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #scrubber-drag-handle:active { cursor: grabbing; }
+
+  #scrubber-text {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 18px;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    background: linear-gradient(90deg, #73D961 0%, #a8f08a 25%, #73D961 50%, #44A633 75%, #73D961 100%);
+    background-size: 100% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: greenShimmerText 6s linear infinite;
+  }
+  @keyframes greenShimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+  }
+  @keyframes greenShimmerText {
+    0% { background-position: 0% 50%; }
+    100% { background-position: -100% 50%; }
+  }
+  #scrubber-params .param-ch {
+    opacity: 0;
+  }
+
+  #scrubber-fill { display: none; }
+  #scrubber-handle { display: none; }
+
+  #hint {
+    position: absolute; bottom: 44px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px; letter-spacing: 0.3em;
+    color: rgba(0,0,0,0.2); text-transform: uppercase;
+    font-family: 'Helvetica Neue', Helvetica, sans-serif; font-weight: 300;
+    pointer-events: none; z-index: 50; transition: opacity 0.8s ease;
+    white-space: nowrap;
+  }
+
+  #progress-bar {
+    position: absolute; bottom: 0; left: 0;
+    height: 1px; background: rgba(0,0,0,0.15);
+    width: 0%; z-index: 50;
+  }
+
+
+
+  #world-clocks {
+    position: absolute;
+    z-index: 10;
+    pointer-events: none;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    color: #1a1a1a;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    opacity: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+  }
+  #clock-scroll-inner {
+    display: flex;
+    gap: 20px;
+    animation: clockScroll 50s linear infinite;
+  }
+  @keyframes clockScroll {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+  }
+  .clock-city { color: #1a1a1a; }
+  .clock-time { color: #1a1a1a; }
+
+  #beyond-banner {
+    position: absolute;
+    z-index: 4;
+    pointer-events: none;
+    background: #0F4F32;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 20px 14px 5px;
+  }
+  #beyond-banner span {
+    font-family: 'Times New Roman', serif;
+    font-weight: 400;
+    color: #fff;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  #beyond-banner .beyond-grid {
+    font-style: italic;
+    color: #73D961;
+  }
+
+  #globe-title {
+    position: absolute;
+    z-index: 4;
+    pointer-events: none;
+    font-family: 'Times New Roman', serif;
+    font-weight: 900;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  #globe-img {
+    position: absolute;
+    z-index: 4;
+    pointer-events: none;
+    object-fit: contain;
+    background: transparent;
+  }
+
+  #gridlines-under {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  #gridlines {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  #page2-green-bar {
+    position: absolute;
+    z-index: 4;
+    pointer-events: none;
+    background: #0F4F32;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <canvas id="grid-canvas"></canvas>
+
+  <div id="gridlines-under"></div>
+  <div id="gridlines"></div>
+  <div id="static-box"></div>
+  <div id="color-box-3" class="color-box"><div id="box3-noise"></div><div id="box3-gradient"></div></div>
+  <div id="color-box-2" class="color-box" style="display:none"></div>
+  <div id="number-stage">
+    <div id="number-clip">
+      <div id="chars"></div>
+    </div>
+    <div id="subtitle-clip">
+      <div id="subtitle"><span class="sub-word">of</span> <span class="sub-word">office</span> <span class="sub-word">workers</span> <span class="sub-word">use</span> <span class="sub-word">Excel</span> <span class="sub-word">every</span> <span class="sub-word">hour</span></div>
+    </div>
+  </div>
+
+  <div id="beyond-banner"><span>Beyond the <span class="beyond-grid">Grid</span></span></div>
+  <div id="globe-title">WE ARE GLOBAL</div>
+  <video id="globe-img" autoplay loop muted playsinline preload="auto">
+    <source src="mov/globe01_lit_v003_web.mp4" type="video/mp4">
+  </video>
+  <div id="world-clocks"></div>
+  <div id="cell-box">
+    <span id="cell-box-text">1.2B monthly users</span>
+    <div id="cell-box-handle"></div>
+  </div>
+
+  <div id="page2-green-bar"></div>
+  <div id="scroll-zone"></div>
+  <div id="scrubber-track">
+    <div id="scrubber-bar">
+      <span id="scrubber-text"><span id="scrubber-static">= EXPAND (</span><span id="scrubber-params">array, {rows}, {columns}, {pad_with}</span></span>
+    </div>
+    <div id="scrubber-drag-handle"><span id="scrubber-close">)</span></div>
+    <div id="scrubber-fill"></div>
+    <div id="scrubber-handle"></div>
+  </div>
+  <div id="click-banner"><span id="click-banner-inner"></span></div>
+  <div id="expand-btn"><svg viewBox="0 0 100 100" style="width:60%;height:60%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"><line x1="10" y1="10" x2="90" y2="90" stroke="#73D961" stroke-width="4"/><line x1="90" y1="10" x2="10" y2="90" stroke="#73D961" stroke-width="4"/></svg></div>
+  <div id="hint">Scroll to reveal</div>
+  <div id="progress-bar"></div>
+</div>
+
+<script>
+// ─── Excel Grid ────────────────────────────────────────────────────────────
+const gridCanvas = document.getElementById('grid-canvas');
+const gc = gridCanvas.getContext('2d');
+
+const COL_W = 96, ROW_H = 20, HDR_W = 46, HDR_H = 20;
+const COLS_EXTRA = 4;
+
+function colLabel(n) {
+  let s = ''; n++;
+  while (n > 0) { s = String.fromCharCode(65 + (n-1) % 26) + s; n = Math.floor((n-1) / 26); }
+  return s;
+}
+
+let selectedCell = { col: 3, row: 3 };
+let hoverCell    = { col: -1, row: -1 };
+
+function screenToGridCell(sx, sy) {
+  const GW = gridCanvas.width, GH = gridCanvas.height;
+  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+  let lx = (sx - cx) / 1.18 + cx;
+  let ly = (sy - cy) / 1.18 + cy;
+  const zScale = 600 / (600 - 120);
+  lx = (lx - cx) / zScale + cx;
+  ly = (ly - cy) / zScale + cy;
+  const canvasX = lx * (GW / window.innerWidth);
+  const canvasY = ly * (GH / window.innerHeight);
+  if (canvasX < HDR_W || canvasY < HDR_H) return { col: -1, row: -1 };
+  return {
+    col: Math.floor((canvasX - HDR_W) / COL_W) + 1,
+    row: Math.floor((canvasY - HDR_H) / ROW_H) + 1
+  };
+}
+
+function drawGrid() {
+  const GW = gridCanvas.width, GH = gridCanvas.height;
+  gc.clearRect(0, 0, GW, GH);
+  gc.fillStyle = '#ffffff';
+  gc.fillRect(0, 0, GW, GH);
+
+  const cols = Math.ceil((GW - HDR_W) / COL_W) + COLS_EXTRA;
+  const rows = Math.ceil((GH - HDR_H) / ROW_H) + COLS_EXTRA;
+  const sc = selectedCell;
+  const hc = hoverCell;
+
+  // Grid lines
+  gc.strokeStyle = '#d0d7de'; gc.lineWidth = 0.5;
+  for (let c = 0; c <= cols; c++) {
+    const x = HDR_W + c * COL_W;
+    gc.beginPath(); gc.moveTo(x+0.5, HDR_H); gc.lineTo(x+0.5, GH); gc.stroke();
+  }
+  for (let r = 0; r <= rows; r++) {
+    const y = HDR_H + r * ROW_H;
+    gc.beginPath(); gc.moveTo(HDR_W, y+0.5); gc.lineTo(GW, y+0.5); gc.stroke();
+  }
+
+  // Hover cell
+  if (hc.col > 0 && hc.row > 0) {
+    const hx = HDR_W + (hc.col-1)*COL_W, hy = HDR_H + (hc.row-1)*ROW_H;
+    gc.fillStyle = 'rgba(19,124,189,0.06)';
+    gc.fillRect(hx+1, hy+1, COL_W-1, ROW_H-1);
+    gc.fillStyle = 'rgba(19,124,189,0.025)';
+    gc.fillRect(HDR_W, hy+1, GW-HDR_W, ROW_H-1);
+    gc.fillRect(hx+1, HDR_H, COL_W-1, GH-HDR_H);
+  }
+
+  // Selected cell (scroll-driven)
+  const selX = HDR_W + (sc.col-1)*COL_W, selY = HDR_H + (sc.row-1)*ROW_H;
+  gc.fillStyle = 'rgba(19,124,189,0.08)';
+  gc.fillRect(selX+1, selY+1, COL_W-1, ROW_H-1);
+  gc.strokeStyle = '#1a7ab7'; gc.lineWidth = 1.5;
+  gc.strokeRect(selX+0.75, selY+0.75, COL_W-0.5, ROW_H-0.5);
+
+  // Column headers
+  gc.fillStyle = '#f2f2f2'; gc.fillRect(0, 0, GW, HDR_H);
+  if (hc.col > 0) { gc.fillStyle = 'rgba(19,124,189,0.1)'; gc.fillRect(HDR_W+(hc.col-1)*COL_W, 0, COL_W, HDR_H); }
+  gc.fillStyle = '#d3e8f7'; gc.fillRect(HDR_W+(sc.col-1)*COL_W, 0, COL_W, HDR_H);
+  gc.strokeStyle = '#d0d7de'; gc.lineWidth = 0.5;
+  gc.beginPath(); gc.moveTo(0, HDR_H+0.5); gc.lineTo(GW, HDR_H+0.5); gc.stroke();
+  gc.textAlign = 'center'; gc.font = '11px Calibri, "Segoe UI", Arial, sans-serif';
+  for (let c = 0; c < cols; c++) {
+    gc.fillStyle = (c+1===sc.col) ? '#1a7ab7' : (c+1===hc.col ? '#2a90d0' : '#555');
+    gc.fillText(colLabel(c), HDR_W+c*COL_W+COL_W/2, 14);
+    gc.strokeStyle = '#c8c8c8'; gc.lineWidth = 0.5;
+    gc.beginPath(); gc.moveTo(HDR_W+(c+1)*COL_W+0.5,0); gc.lineTo(HDR_W+(c+1)*COL_W+0.5,HDR_H); gc.stroke();
+  }
+
+  // Row headers
+  gc.fillStyle = '#f2f2f2'; gc.fillRect(0, 0, HDR_W, GH);
+  if (hc.row > 0) { gc.fillStyle = 'rgba(19,124,189,0.1)'; gc.fillRect(0, HDR_H+(hc.row-1)*ROW_H, HDR_W, ROW_H); }
+  gc.fillStyle = '#d3e8f7'; gc.fillRect(0, HDR_H+(sc.row-1)*ROW_H, HDR_W, ROW_H);
+  gc.strokeStyle = '#d0d7de'; gc.lineWidth = 0.5;
+  gc.beginPath(); gc.moveTo(HDR_W+0.5, 0); gc.lineTo(HDR_W+0.5, GH); gc.stroke();
+  gc.textAlign = 'right'; gc.font = '11px Calibri, "Segoe UI", Arial, sans-serif';
+  for (let r = 0; r < rows; r++) {
+    gc.fillStyle = (r+1===sc.row) ? '#1a7ab7' : (r+1===hc.row ? '#2a90d0' : '#555');
+    gc.fillText(r+1, HDR_W-4, HDR_H+r*ROW_H+14);
+    gc.strokeStyle = '#c8c8c8'; gc.lineWidth = 0.5;
+    gc.beginPath(); gc.moveTo(0, HDR_H+(r+1)*ROW_H+0.5); gc.lineTo(HDR_W, HDR_H+(r+1)*ROW_H+0.5); gc.stroke();
+  }
+
+  // Corner
+  gc.fillStyle = '#f2f2f2'; gc.fillRect(0, 0, HDR_W, HDR_H);
+  gc.strokeStyle = '#d0d7de'; gc.lineWidth = 0.5; gc.strokeRect(0.5, 0.5, HDR_W, HDR_H);
+  gc.fillStyle = '#555'; gc.font = '10px Calibri, "Segoe UI", Arial, sans-serif';
+  gc.textAlign = 'center';
+  const nameCol = hc.col > 0 ? hc.col : sc.col;
+  const nameRow = hc.row > 0 ? hc.row : sc.row;
+  gc.fillText(`${colLabel(nameCol-1)}${nameRow}`, HDR_W/2, 14);
+}
+
+function resizeGrid() {
+  gridCanvas.width  = window.innerWidth;
+  gridCanvas.height = window.innerHeight;
+  drawGrid();
+}
+resizeGrid();
+
+window.addEventListener('resize', () => { resizeGrid(); });
+
+// ─── Animation state ───────────────────────────────────────────────────────
+let mouse       = { x: window.innerWidth/2, y: window.innerHeight/2 };
+let smoothMouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
+let scrollProgress = 0, smoothProgress = 0, displayNumber = 0, targetNumber = 0;
+let hintHidden = false, lastText = '';
+let revealProgress = 0, smoothReveal = 0;
+let revealDone = false;
+let collapsePhase = false;
+let page2Progress = 0, smoothPage2 = 0;
+let page2Active = false;
+
+const cellBox      = document.getElementById('cell-box');
+const hint         = document.getElementById('hint');
+const progressBar  = document.getElementById('progress-bar');
+const charsEl      = document.getElementById('chars');
+const subtitleEl   = document.getElementById('subtitle');
+const numberStage  = document.getElementById('number-stage');
+const page2GreenBar = document.getElementById('page2-green-bar');
+
+function buildChars(text) {
+  if (text === lastText) return;
+  lastText = text;
+  charsEl.innerHTML = '';
+  [...text].forEach(ch => {
+    const el = document.createElement('span');
+    el.className = 'ch';
+    el.textContent = ch;
+    charsEl.appendChild(el);
+  });
+}
+
+// ─── Wrap params chars ────────────────────────────────────────────────────
+const paramsSource = document.getElementById('scrubber-params');
+const paramsText = paramsSource.textContent;
+paramsSource.innerHTML = '';
+[...paramsText].forEach(ch => {
+  const s = document.createElement('span');
+  s.className = 'param-ch';
+  s.textContent = ch;
+  paramsSource.appendChild(s);
+});
+const paramChars = paramsSource.querySelectorAll('.param-ch');
+
+// ─── Mouse ─────────────────────────────────────────────────────────────────
+document.addEventListener('mousemove', e => {
+  mouse.x = e.clientX; mouse.y = e.clientY;
+});
+
+// ─── Scrubber drag ─────────────────────────────────────────────────────────
+const scrubberTrack = document.getElementById('scrubber-track');
+const scrubberBar = document.getElementById('scrubber-bar');
+const scrubberText = document.getElementById('scrubber-text');
+const scrubberHandle = document.getElementById('scrubber-handle');
+const scrubberFill = document.getElementById('scrubber-fill');
+let isDragging = false;
+const minBarW = 140;
+
+function updateScrubber(clientX) {
+  if (!revealDone) return;
+  const rect = scrubberTrack.getBoundingClientRect();
+  const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+  scrollProgress = x / rect.width;
+  targetNumber = Math.round(scrollProgress * 67);
+}
+
+const scrubberDragHandle = document.getElementById('scrubber-drag-handle');
+
+scrubberDragHandle.addEventListener('mousedown', e => {
+  if (!revealDone) return;
+  e.preventDefault();
+  isDragging = true;
+});
+
+scrubberBar.addEventListener('mousedown', e => {
+  if (!revealDone) return;
+  e.preventDefault();
+  isDragging = true;
+});
+
+scrubberTrack.addEventListener('mousedown', e => {
+  if (!revealDone) return;
+  e.preventDefault();
+  isDragging = true;
+  updateScrubber(e.clientX);
+});
+
+document.addEventListener('mousemove', e => {
+  if (isDragging) updateScrubber(e.clientX);
+});
+
+document.addEventListener('mouseup', () => {
+  isDragging = false;
+});
+
+// Touch support
+scrubberDragHandle.addEventListener('touchstart', e => {
+  if (!revealDone) return;
+  isDragging = true;
+}, { passive: true });
+
+scrubberBar.addEventListener('touchstart', e => {
+  if (!revealDone) return;
+  isDragging = true;
+}, { passive: true });
+
+scrubberTrack.addEventListener('touchstart', e => {
+  if (!revealDone) return;
+  isDragging = true;
+  updateScrubber(e.touches[0].clientX);
+}, { passive: true });
+
+document.addEventListener('touchmove', e => {
+  if (isDragging) updateScrubber(e.touches[0].clientX);
+}, { passive: true });
+
+document.addEventListener('touchend', () => {
+  isDragging = false;
+});
+
+// ─── Click banner ───────────────────────────────────────────────────────────
+const clickBanner = document.getElementById('click-banner');
+const clickBannerInner = document.getElementById('click-banner-inner');
+const bannerUnit = 'CLICK\u00A0\u00A0>>>>>>>> \u00A0\u00A0';
+clickBannerInner.textContent = bannerUnit.repeat(20);
+
+// ─── Expand button ──────────────────────────────────────────────────────────
+const expandBtn = document.getElementById('expand-btn');
+let expandInterval = null;
+let expanded = false;
+
+expandBtn.addEventListener('click', () => {
+  if (!revealDone || expandInterval) return;
+  if (!expanded) {
+    expandInterval = setInterval(() => {
+      scrollProgress += 2 / 67;
+      targetNumber = Math.round(scrollProgress * 67);
+      if (scrollProgress >= 1) {
+        scrollProgress = 1;
+        targetNumber = 67;
+        clearInterval(expandInterval);
+        expandInterval = null;
+        expanded = true;
+      }
+    }, 40);
+  } else {
+    expandInterval = setInterval(() => {
+      scrollProgress -= 2 / 67;
+      targetNumber = Math.round(scrollProgress * 67);
+      if (scrollProgress <= 0) {
+        scrollProgress = 0;
+        targetNumber = 0;
+        clearInterval(expandInterval);
+        expandInterval = null;
+        expanded = false;
+      }
+    }, 40);
+  }
+});
+
+// ─── Scroll reveal ──────────────────────────────────────────────────────────
+document.addEventListener('wheel', e => {
+  e.preventDefault();
+
+  // Page 2 phase: scrolling drives page2Progress
+  if (page2Active) {
+    page2Progress += e.deltaY * 0.003;
+    page2Progress = Math.max(0, Math.min(1, page2Progress));
+    // If scrolled all the way back, return to collapse phase
+    if (page2Progress <= 0 && e.deltaY < 0 && smoothPage2 < 0.01) {
+      page2Active = false;
+      collapsePhase = true;
+      revealProgress = 0.01;
+    }
+    return;
+  }
+
+  // Start collapse: scroll down after reveal is done
+  if (revealDone && e.deltaY > 0) {
+    collapsePhase = true;
+    revealDone = false;
+    revealProgress = 0.99;
+  }
+
+  // Collapse phase: scroll direction is inverted (down = close, up = re-open)
+  if (collapsePhase) {
+    revealProgress -= e.deltaY * 0.003;
+    revealProgress = Math.max(0, Math.min(1, revealProgress));
+    // Transition to page 2 when fully collapsed and lerp has caught up
+    if (revealProgress <= 0 && e.deltaY > 0 && smoothReveal < 0.01) {
+      page2Active = true;
+      collapsePhase = false;
+    }
+    return;
+  }
+
+  // Normal reverse reveal: scroll up when fully open
+  if (revealDone && e.deltaY < 0) {
+    if (scrollProgress > 0.01 || smoothProgress > 0.01) return;
+    revealDone = false;
+    revealProgress = 0.99;
+    scrollProgress = 0;
+    smoothProgress = 0;
+    targetNumber = 0;
+    displayNumber = 0;
+    expanded = false;
+    if (expandInterval) { clearInterval(expandInterval); expandInterval = null; }
+  }
+
+  // Normal reveal phase
+  revealProgress += e.deltaY * 0.003;
+  revealProgress = Math.max(0, Math.min(1, revealProgress));
+}, { passive: false });
+
+// ─── World clocks setup ─────────────────────────────────────────────────
+const worldClocks = document.getElementById('world-clocks');
+const clockCities = [
+  { label: 'LDN', tz: 'Europe/London' },
+  { label: 'PAR', tz: 'Europe/Paris' },
+  { label: 'NYC', tz: 'America/New_York' },
+  { label: 'LAX', tz: 'America/Los_Angeles' },
+  { label: 'TYO', tz: 'Asia/Tokyo' },
+  { label: 'DXB', tz: 'Asia/Dubai' },
+  { label: 'SIN', tz: 'Asia/Singapore' },
+  { label: 'BER', tz: 'Europe/Berlin' },
+  { label: 'HKG', tz: 'Asia/Hong_Kong' },
+  { label: 'SÃO', tz: 'America/Sao_Paulo' },
+  { label: 'SEL', tz: 'Asia/Seoul' },
+  { label: 'BOM', tz: 'Asia/Kolkata' },
+  { label: 'CAI', tz: 'Africa/Cairo' },
+  { label: 'MOW', tz: 'Europe/Moscow' },
+  { label: 'JKT', tz: 'Asia/Jakarta' },
+];
+const clockInner = document.createElement('div');
+clockInner.id = 'clock-scroll-inner';
+const clockTimeEls = [];
+for (let copy = 0; copy < 2; copy++) {
+  clockCities.forEach(city => {
+    const span = document.createElement('span');
+    const citySpan = document.createElement('span');
+    citySpan.className = 'clock-city';
+    citySpan.textContent = city.label + ' ';
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'clock-time';
+    span.appendChild(citySpan);
+    span.appendChild(timeSpan);
+    clockInner.appendChild(span);
+    clockTimeEls.push({ el: timeSpan, tz: city.tz });
+  });
+}
+worldClocks.appendChild(clockInner);
+
+// ─── Render loop ────────────────────────────────────────────────────────────
+function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+function frame() {
+  smoothMouse.x += (mouse.x - smoothMouse.x) * 0.08;
+  smoothMouse.y += (mouse.y - smoothMouse.y) * 0.08;
+
+  // Count up
+  smoothProgress += (scrollProgress - smoothProgress) * 0.045;
+  displayNumber += (targetNumber - displayNumber) * 0.06;
+  buildChars(Math.round(displayNumber) + '%');
+
+  // ── Scroll reveal ───────────────────────────────────────────────────────
+  smoothReveal += (revealProgress - smoothReveal) * 0.035;
+  if (!revealDone && smoothReveal > 0.995 && revealProgress >= 0.995) {
+    revealDone = true;
+    collapsePhase = false;
+    smoothReveal = 1;
+    revealProgress = 1;
+    hint.textContent = 'Drag to reveal';
+    hint.style.opacity = '1';
+    hintHidden = false;
+  }
+
+  smoothPage2 += (page2Progress - smoothPage2) * 0.035;
+
+  const sr = smoothReveal;
+  const p1Fade = smoothPage2 > 0.001 ? (1 - Math.min(smoothPage2 * 3, 1)) : 1;
+
+  // ── Scrubber bar + params driven by smoothProgress ─────────────────────
+  progressBar.style.width = (smoothProgress * 100) + '%';
+  const trackRect = scrubberTrack.getBoundingClientRect();
+  const barW = minBarW + (trackRect.width - minBarW) * smoothProgress;
+  scrubberBar.style.width = barW + 'px';
+  scrubberDragHandle.style.left = barW + 'px';
+  scrubberHandle.style.left = (smoothProgress * 100) + '%';
+  scrubberFill.style.width = (smoothProgress * 100) + '%';
+  const totalChars = paramChars.length;
+  paramChars.forEach((ch, i) => {
+    const charStart = i / totalChars;
+    const charEnd = (i + 1) / totalChars;
+    const charOpacity = Math.max(0, Math.min((smoothProgress - charStart) / (charEnd - charStart), 1));
+    ch.style.opacity = charOpacity;
+  });
+  if (!hintHidden && smoothProgress > 0.03) { hint.style.opacity = '0'; hintHidden = true; }
+
+  // ── Number vertical centering + drift up ────────────────────────────────
+  const boxTopY = (window.innerHeight / 2 - 200) - 40 - 16;
+  const driftBoxH = 400 + 40 * 2 + 25 + 16;
+  const boxCenterY = boxTopY + driftBoxH / 2;
+  const viewCenterY = window.innerHeight / 2;
+  const verticalOffset = boxCenterY - viewCenterY;
+  const driftStart = 30 / 67;
+  const driftEnd = 1;
+  const driftProgress = Math.max(0, Math.min((smoothProgress - driftStart) / (driftEnd - driftStart), 1));
+  const driftEased = 1 - Math.pow(1 - driftProgress, 4);
+  const driftAmount = 60; // px to drift up from
+  const numberY = verticalOffset + (1 - driftEased) * driftAmount;
+  document.getElementById('number-clip').style.transform = `translateY(${numberY}px)`;
+
+  // ── Parallax from cursor ────────────────────────────────────────────────
+  const mx = (smoothMouse.x - window.innerWidth / 2) / (window.innerWidth / 2);
+  const my = (smoothMouse.y - window.innerHeight / 2) / (window.innerHeight / 2);
+
+  // Each character moves independently with different depth
+  const chars = charsEl.querySelectorAll('.ch');
+  const charDepths = [20, 14, 26, 18]; // deeper parallax on 67%
+  chars.forEach((ch, i) => {
+    const depth = charDepths[i % charDepths.length];
+    const px = mx * -depth;
+    const py = my * -(depth * 0.6);
+    ch.style.transform = `translate(${px}px, ${py}px)`;
+  });
+
+  const subPX = mx * -8, subPY = my * -5;
+  const cellPX = mx * -5, cellPY = my * -3;
+  const colorBoxPX = mx * -4, colorBoxPY = my * -3;
+
+  // ── Color box: forms tightly around the type ────────────────────────────
+  const sp = smoothProgress;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const numRect2 = charsEl.getBoundingClientRect();
+  const subRect = subtitleEl.getBoundingClientRect();
+  const fixedLeft = window.innerWidth * 0.12 + 490;
+  const fixedTop = window.innerHeight / 2 - 200;
+  const fixedH = 400;
+  const padX = 80;
+  const padY = 40;
+  const finalW = window.innerWidth - fixedLeft + padX;
+  const finalH = fixedH + padY * 2 + 25 + 16;
+
+  // ── Static box: full size, underneath everything ─────────────────────
+  const staticBox = document.getElementById('static-box');
+  staticBox.style.left = fixedLeft + 'px';
+  staticBox.style.top = (fixedTop - padY - 16) + 'px';
+  staticBox.style.width = finalW + 'px';
+  staticBox.style.height = finalH + 'px';
+
+  // ── Gridlines: aligned to box edges matching reference ───────────────────
+  const glEl = document.getElementById('gridlines');
+  const bxTop = fixedTop - padY - 16;
+  const bxBot = bxTop + finalH;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const colX1 = fixedLeft - 39;
+  const colX2 = fixedLeft;
+  const h1 = bxTop - 145;
+  const h2 = bxTop - 98;
+  const h3 = bxTop;
+  const h4 = bxBot;
+  const h5 = bxBot + 46;
+  const h6 = bxBot + 107;
+
+  // Reveal: lines expand from center — box + dashed fully, outer slightly
+  const centerY = vh / 2;
+  let rh1 = lerp(centerY + (h1 - centerY) * 0.6, h1, sr);
+  let rh2 = lerp(centerY, h2, sr);
+  let rh3 = lerp(centerY, h3, sr);
+  let rh4 = lerp(centerY, h4, sr);
+  let rh5 = lerp(centerY, h5, sr);
+  let rh6 = lerp(centerY, h6, sr);
+
+  // Page 2: only expand top lines (rh1-rh3) toward viewport-pinned targets
+  // rh4-rh6 stay collapsed so page1 content area remains hidden
+  let rh6Start = rh6;
+  if (smoothPage2 > 0.001) {
+    // rh1 and rh2 stay at collapsed positions so Beyond the Grid doesn't move
+    const rh3Target = rh2;
+    rh3 = lerp(rh3, rh3Target, smoothPage2);
+    rh4 = lerp(rh4, rh3Target, smoothPage2);
+    rh5 = lerp(rh5, rh3Target, smoothPage2);
+  }
+
+  const midH23 = (rh2 + rh3) / 2;
+  glEl.innerHTML =
+    `<svg width="${vw}" height="${vh * 2}" style="position:absolute;left:0;top:0">` +
+    `<line x1="0" y1="${midH23}" x2="${vw}" y2="${midH23}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4" opacity="${0.4 * sr}"/>` +
+    `<line x1="0" y1="${rh1}" x2="${vw}" y2="${rh1}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="0" y1="${rh2}" x2="${vw}" y2="${rh2}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4" opacity="${0.4 * sr}"/>` +
+    `<line x1="0" y1="${rh3}" x2="${vw}" y2="${rh3}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="0" y1="${rh4}" x2="${vw}" y2="${rh4}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="0" y1="${rh5}" x2="${vw}" y2="${rh5}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4" opacity="${0.4 * sr}"/>` +
+    `<line x1="0" y1="${rh6}" x2="${vw}" y2="${rh6}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    (smoothPage2 > 0.001 ? `<line x1="0" y1="${rh6Start}" x2="${vw}" y2="${rh6Start}" stroke="#0F4F32" stroke-width="0.7"/>` : '') +
+    `<line x1="${colX1}" y1="0" x2="${colX1}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="${colX2}" y1="0" x2="${colX2}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `</svg>`;
+
+  // Globe vertical guides (underneath green box)
+  const globeLeftX = fixedLeft - finalH * 1.337 - 38;
+  const globeRightX = fixedLeft - 38;
+  const glUnder = document.getElementById('gridlines-under');
+  glUnder.innerHTML =
+    `<svg width="${vw}" height="${vh * 2}" style="position:absolute;left:0;top:0">` +
+    `<line x1="${globeLeftX}" y1="0" x2="${globeLeftX}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `</svg>`;
+
+  // Green bar hidden for now
+  page2GreenBar.style.display = 'none';
+
+  // Clip number stage to area between expanding lines
+  numberStage.style.clipPath = `inset(${Math.max(0, rh3)}px 0 ${Math.max(0, vh - rh4)}px 0)`;
+  numberStage.style.opacity = p1Fade;
+
+  // Static box fades in with reveal
+  staticBox.style.opacity = sr * p1Fade;
+
+  // Scrubber: attached to h4 line, clipped by expanding lines
+  scrubberTrack.style.pointerEvents = revealDone ? 'auto' : 'none';
+
+  // ── Position scrubber between bottom gridlines (h4 → h5) ────────────
+  scrubberTrack.style.top = rh4 + 'px';
+  scrubberTrack.style.height = (rh5 - rh4) + 'px';
+
+  // ── Expand button: square, to the left of scrubber ─────────────────
+  const trackH = rh5 - rh4;
+  const trackBCR = scrubberTrack.getBoundingClientRect();
+  expandBtn.style.top = rh4 + 'px';
+  const btnW = trackH - 7;
+  expandBtn.style.width = btnW + 'px';
+  expandBtn.style.height = trackH + 'px';
+  expandBtn.style.left = (trackBCR.left - btnW) + 'px';
+
+  // ── Click banner: from left edge of frame to button ─────────────────
+  const btnLeft = trackBCR.left - btnW;
+  const bannerW = btnLeft - 4;
+  clickBanner.style.top = rh4 + 'px';
+  clickBanner.style.height = trackH + 'px';
+  clickBanner.style.width = bannerW + 'px';
+  clickBanner.style.left = '0px';
+  clickBanner.style.lineHeight = trackH + 'px';
+
+  // ── Color box 2: starts earlier ───────────────────────────────────────
+  const colorBox2 = document.getElementById('color-box-2');
+  const colorIn2 = 0;
+  let boxW2 = 0;
+  if (sp > colorIn2) {
+    const p2 = Math.pow(Math.min((sp - colorIn2) / (1 - colorIn2), 1), 0.63);
+    boxW2 = 1 + (finalW - 1) * p2;
+  }
+  colorBox2.style.left = fixedLeft + 'px';
+  colorBox2.style.top = (fixedTop - padY - 16) + 'px';
+  colorBox2.style.width = boxW2 + 'px';
+  colorBox2.style.height = finalH + 'px';
+  const box2Fade = Math.max(0, Math.min(sp / 0.001, 1));
+  colorBox2.style.opacity = (box2Fade * p1Fade).toString();
+  // Clip color boxes between rh3 and rh4
+  const boxTop = fixedTop - padY - 16;
+  const clipT = Math.max(0, rh3 - boxTop);
+  const clipB = Math.max(0, (boxTop + finalH) - rh4);
+  colorBox2.style.clipPath = `inset(${clipT}px 0 ${clipB}px 0)`;
+
+  // ── Color box 3: starts later, expands slower ───────────────────────
+  const colorBox3 = document.getElementById('color-box-3');
+  const colorIn3 = 10 / 67;
+  let boxW3 = 0;
+  if (sp > colorIn3) {
+    const p3 = Math.pow(Math.min((sp - colorIn3) / (1 - colorIn3), 1), 0.9);
+    boxW3 = 1 + (finalW - 1) * p3;
+  }
+  colorBox3.style.left = fixedLeft + 'px';
+  colorBox3.style.top = (fixedTop - padY - 16) + 'px';
+  colorBox3.style.width = boxW3 + 'px';
+  colorBox3.style.height = finalH + 'px';
+  colorBox3.style.opacity = (sp > colorIn3 ? p1Fade : 0).toString();
+  colorBox3.style.clipPath = `inset(${clipT}px 0 ${clipB}px 0)`;
+
+  // ── Globe image: to the left of the green box ──────────────────────
+  const globeImg = document.getElementById('globe-img');
+  const globeSize = finalH * 1.337;
+  globeImg.style.width = globeSize + 'px';
+  globeImg.style.height = globeSize + 'px';
+  globeImg.style.left = (fixedLeft - globeSize - 38) + 'px';
+  globeImg.style.top = (boxTop - 87) + 'px';
+  const globeTop = boxTop - 87;
+  globeImg.style.opacity = p1Fade;
+  const gClipT = Math.max(0, rh3 - globeTop);
+  const gClipB = Math.max(0, (globeTop + globeSize) - rh4);
+  globeImg.style.clipPath = `inset(${gClipT}px 0 ${gClipB}px 0)`;
+
+  // ── Beyond banner: between rh1 and rh2, left of colX1 ──────────────────
+  const beyondBanner = document.getElementById('beyond-banner');
+  const bbTop = rh1;
+  const bbHeight = rh2 - rh1;
+  beyondBanner.style.left = globeLeftX + 'px';
+  beyondBanner.style.top = bbTop + 'px';
+  beyondBanner.style.width = (colX1 - globeLeftX) + 'px';
+  beyondBanner.style.height = bbHeight + 'px';
+  const bbFullHeight = h2 - h1;
+  const bbFontSize = (collapsePhase || page2Active || smoothPage2 > 0.001) ? Math.max(12, bbFullHeight * 0.35) : Math.max(12, bbHeight * lerp(0.2, 0.35, sr));
+  beyondBanner.querySelector('span').style.fontSize = bbFontSize + 'px';
+  beyondBanner.style.clipPath = `inset(${Math.max(0, rh1 - bbTop)}px 0 ${Math.max(0, (bbTop + bbHeight) - rh2)}px 0)`;
+
+  // ── Globe title: between rh2 and globe top ─────────────────────────────
+  const globeTitle = document.getElementById('globe-title');
+  const gtFontSize = 31;
+  globeTitle.style.fontSize = gtFontSize + 'px';
+  globeTitle.style.letterSpacing = '0.15em';
+  const gtTop = rh2 + 7;
+  globeTitle.style.left = (globeLeftX + 5) + 'px';
+  globeTitle.style.top = gtTop + 'px';
+  globeTitle.style.opacity = sr * p1Fade;
+  const gtHeight = gtFontSize + 6;
+  const gtClipT = Math.max(0, rh2 - gtTop);
+  const gtClipB = Math.max(0, (gtTop + gtHeight) - rh3);
+  globeTitle.style.clipPath = `inset(${gtClipT}px 0 ${gtClipB}px 0)`;
+
+  // Box 3 gradient animation
+  const box3Grad = document.getElementById('box3-gradient');
+  if (sp > colorIn3 && !box3Grad.classList.contains('animate')) {
+    box3Grad.classList.add('animate');
+  } else if (sp <= colorIn3 && box3Grad.classList.contains('animate')) {
+    box3Grad.classList.remove('animate');
+  }
+
+  // Number text: color wipes on with each bar
+  const barLeft = fixedLeft;
+  const bar2Right = barLeft + boxW2;
+  const bar3Right = barLeft + boxW3;
+
+  charsEl.querySelectorAll('.ch').forEach(ch => {
+    const r = ch.getBoundingClientRect();
+    const chCenter = r.left + r.width / 2;
+    if (chCenter < bar3Right && boxW3 > 0) {
+      ch.style.color = '#73D961';
+      ch.style.background = 'none';
+      ch.style.webkitBackgroundClip = '';
+      ch.style.backgroundClip = '';
+      ch.style.webkitTextFillColor = '';
+      ch.style.animation = '';
+    } else if (chCenter < bar2Right && boxW2 > 0) {
+      ch.style.color = '#002E17';
+      ch.style.background = 'none';
+      ch.style.webkitTextFillColor = '';
+      ch.style.animation = '';
+    } else {
+      ch.style.color = '#000000';
+      ch.style.background = 'none';
+      ch.style.webkitTextFillColor = '';
+      ch.style.animation = '';
+    }
+  });
+
+  // Subtitle words wipe same way
+  const subWords2 = subtitleEl.querySelectorAll('.sub-word');
+  subWords2.forEach(w => {
+    const r = w.getBoundingClientRect();
+    const wCenter = r.left + r.width / 2;
+    if (wCenter < bar3Right && boxW3 > 0) {
+      w.style.color = '#73D961';
+    } else if (wCenter < bar2Right && boxW2 > 0) {
+      w.style.color = '#002E17';
+    } else {
+      w.style.color = '#000000';
+    }
+  });
+
+  const textColor = '#000000';
+
+  // Cell box: white background
+  cellBox.style.background = '#ffffff';
+  const cellTextEl = document.getElementById('cell-box-text');
+  cellTextEl.style.color = textColor;
+  cellTextEl.style.transform = `translate(${cellPX}px, ${cellPY}px)`;
+
+  // ── Cell box: position over right side of number, grow from left ──
+  // Measure full width by temporarily expanding
+  cellBox.style.width = 'auto';
+  const boxFullW = cellBox.offsetWidth;
+  const boxH = cellBox.offsetHeight;
+  const fixedBoxLeft = window.innerWidth / 2 + 185;
+  const fixedBoxTop = window.innerHeight / 2 + 15 - 140;
+  const boxDrift = easeOut(Math.pow(smoothProgress, 2)) * 150;
+  cellBox.style.left = (fixedBoxLeft + boxDrift) + 'px';
+  cellBox.style.top = fixedBoxTop + 'px';
+
+  const cellStart = 0.05;
+  const cellEnd = 0.77;
+  const cellProgress = Math.max(0, Math.min((smoothProgress - cellStart) / (cellEnd - cellStart), 1));
+  const cellEased = easeOut(cellProgress);
+  cellBox.style.width = (cellEased * boxFullW) + 'px';
+  cellBox.style.opacity = (Math.min(cellEased * 3, 1) * p1Fade).toString();
+  // Clip cell box between guides
+  const cbClipT = Math.max(0, rh3 - fixedBoxTop);
+  const cbClipB = Math.max(0, (fixedBoxTop + boxH) - rh4);
+  cellBox.style.clipPath = `inset(${cbClipT}px 0 ${cbClipB}px 0)`;
+
+  // ── Subtitle: reveals after number is mostly in (from 60% scroll on) ──
+  const subStart = 38 / 67;
+  const subProgress = Math.max(0, Math.min((smoothProgress - subStart) / (1 - subStart), 1));
+  const subEased = easeOut(subProgress);
+  const subY = (1 - subEased) * 100;
+  const subBlur = (1 - subEased) * 12;
+  subtitleEl.style.transform = `translateY(${subY}%)`;
+  const subWords = subtitleEl.querySelectorAll('.sub-word');
+  const wordDepths = [6, 10, 4, 12, 8, 5, 9];
+  subWords.forEach((w, i) => {
+    const d = wordDepths[i % wordDepths.length];
+    w.style.transform = `translate(${mx * -d}px, ${my * -(d * 0.5)}px)`;
+  });
+  subtitleEl.style.filter = `blur(${subBlur}px)`;
+  subtitleEl.style.opacity = subEased.toString();
+
+  // ── World clocks: update times only ─────────────────────────────────
+  const now = new Date();
+  const fmt = (tz) => now.toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  clockTimeEls.forEach(c => { c.el.textContent = fmt(c.tz); });
+  worldClocks.style.left = (fixedLeft + 10) + 'px';
+  worldClocks.style.top = rh2 + 'px';
+  worldClocks.style.height = (rh3 - rh2) + 'px';
+  worldClocks.style.paddingBottom = '15px';
+  worldClocks.style.opacity = sr * p1Fade;
+
+  // ── Grid: fixed in Z-space ─────────────────────────────────────────────
+  gridCanvas.style.transform = `perspective(600px) translateZ(-120px) scale(1.18)`;
+
+  // ── Hover cell ─────────────────────────────────────────────────────────
+  hoverCell = screenToGridCell(smoothMouse.x, smoothMouse.y);
+
+  // ── Selected cell sweeps with scroll ───────────────────────────────────
+  const startCol = Math.round(window.innerWidth / 2 / COL_W) - 2;
+  const startRow = Math.round(window.innerHeight / 2 / ROW_H) - 3;
+  const cellIndex = Math.floor(smoothProgress * 24);
+  selectedCell.col = startCol + (cellIndex % 5);
+  selectedCell.row = startRow + Math.floor(cellIndex / 5);
+
+  drawGrid();
+
+  // Page 2: fade scrubber UI
+  if (smoothPage2 > 0.001) {
+    scrubberTrack.style.opacity = p1Fade;
+    expandBtn.style.opacity = p1Fade;
+    clickBanner.style.opacity = p1Fade;
+    progressBar.style.opacity = p1Fade;
+  }
+
+  // ── Collapse / Page 2: shift whole page ─────────────────────────────
+  const container = document.getElementById('container');
+  if (collapsePhase || page2Active || smoothPage2 > 0.001) {
+    const downOffset = (1 - sr) * vh * -0.425;
+    container.style.transform = `translateY(${downOffset}px)`;
+  } else {
+    container.style.transform = '';
+  }
+
+  requestAnimationFrame(frame);
+}
+
+buildChars('0%');
+
+// Ensure globe video plays
+const globeVideo = document.getElementById('globe-img');
+globeVideo.muted = true;
+globeVideo.load();
+globeVideo.addEventListener('loadeddata', () => { globeVideo.play().catch(() => {}); });
+globeVideo.play().catch(() => {});
+['click','wheel','mousemove','touchstart'].forEach(evt => {
+  document.addEventListener(evt, () => { globeVideo.play().catch(() => {}); }, { once: true });
+});
+
+frame();
+</script>
+</body>
+</html>
