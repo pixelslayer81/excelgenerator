@@ -350,6 +350,7 @@
     font-weight: 600;
     color: #000;
     white-space: nowrap;
+    overflow: hidden;
     display: none;
     line-height: 1;
     padding: 0 10px;
@@ -786,7 +787,8 @@ function frame() {
 
   // Container offset (matching page 1 collapse, shifts up 75px at start)
   const collapseShift = -120 * (1 - expandScroll);
-  const offset = vh * -0.4 + collapseShift;
+  const initialShift = -8 * (1 - expandScroll);
+  const offset = vh * -0.4 + collapseShift + initialShift;
   container.style.transform = `translateY(${offset}px)`;
   // Photo edges (guides wipe the photo on from top-left)
   const photoLeft = globeLeftX + 170;
@@ -908,7 +910,7 @@ function frame() {
     { el: document.getElementById('click-label4'), top: clickDash1, bot: clickDash2 },
     { el: document.getElementById('click-label7'), top: clickDash2, bot: clickDash3 },
     { el: document.getElementById('click-label1'), top: clickDash3, bot: clickDash4, textOffsetY: -3 },
-    { el: document.getElementById('click-label5'), top: clickDash5, bot: clickDash6, textOffsetY: -5 },
+    { el: document.getElementById('click-label5'), top: clickDash5, bot: clickDash6 },
     { el: document.getElementById('click-label6'), top: clickDash7, bot: clickDash10, leftAt: 'exitGuideX', swatchSize: true },
     { el: document.getElementById('click-label2'), top: clickDash9, bot: clickDash8, centered: true },
   ];
@@ -925,11 +927,11 @@ function frame() {
       el.style.top = (top + (offsetY || 0)) + 'px';
       el.style.paddingBottom = textOffsetY ? (-textOffsetY * 2) + 'px' : '0';
       el.style.width = (swatchSize ? swatchW : (halfWidth ? (photoLeft - globeLeftX) / 2 : (photoLeft - globeLeftX))) + 'px';
-      el.style.height = (swatchSize ? swatchHSize : (bot - top)) + 'px';
-      el.style.opacity = 1;
-      el.style.clipPath = `inset(0px 0px ${Math.max(0, bot - top)}px 0px)`;
-      const clipTop = Math.max(0, bot - top - (bot - top) * cT);
+      const elH = swatchSize ? swatchHSize : (bot - top);
+      el.style.height = elH + 'px';
+      const clipTop = Math.max(0, elH - elH * cT);
       el.style.clipPath = `inset(${clipTop}px 0px 0px 0px)`;
+      el.style.opacity = Math.min(1, elH / 10);
     } else {
       el.style.display = 'none';
     }
@@ -1318,8 +1320,9 @@ function frame() {
   usernameEl.style.transform = `scale(${usernameScale})`;
   usernameEl.style.transformOrigin = 'left top';
   const uRawH = usernameEl.offsetHeight;
+  const uRawW = usernameEl.offsetWidth;
   const uClipLeftPx = Math.max(0, (globeLeftX - usernameX) / usernameScale);
-  const uClipBottomPx = Math.max(0, (usernameY + uRawH * usernameScale - photoBottomDraw) / usernameScale);
+  const uClipBottomPx = Math.max(0, uRawH - (exitDash3 - usernameY) / usernameScale);
   usernameEl.style.clipPath = `inset(0px 0px ${uClipBottomPx}px ${uClipLeftPx}px)`;
 
   // Letter-by-letter fade up
