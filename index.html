@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page 2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #fff; overflow: hidden; }
+
+  #container {
+    width: 100vw; height: 200vh;
+    position: relative; overflow: visible;
+  }
+
+  #gridlines-under {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  #gridlines {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  #gridlines-over {
+    position: absolute;
+    inset: 0;
+    z-index: 22;
+    pointer-events: none;
+  }
+
+  #exit-green-fill {
+    position: absolute;
+    z-index: 23;
+    pointer-events: none;
+    background: #0F4F32;
+    overflow: hidden;
+  }
+
+  /* ── Spreadsheet inside green fill ──────────────────────────── */
+  #exit-green-fill.active-sheet {
+    pointer-events: auto;
+  }
+  #sheet-wrap {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  #exit-green-fill.active-sheet #sheet-wrap { opacity: 1; }
+
+  #sheet-scroll {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+  }
+
+  table.sheet {
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  table.sheet th.sh-corner {
+    background: #0a3d26;
+    border: 1px solid #1a6b45;
+    width: 34px; min-width: 34px;
+    height: 20px;
+    position: sticky; top: 0; left: 0;
+    z-index: 3;
+  }
+  table.sheet th.sh-col {
+    background: #0a3d26;
+    border: 1px solid #1a6b45;
+    min-width: 40px; width: 40px; max-width: 40px; height: 20px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px; font-weight: 600;
+    color: #73D961;
+    text-align: center;
+    position: sticky; top: 0; z-index: 2;
+  }
+  table.sheet th.sh-col.sh-active {
+    background: #135a38;
+    color: #fff;
+  }
+  table.sheet th.sh-row {
+    background: #0a3d26;
+    border: 1px solid #1a6b45;
+    width: 34px; min-width: 34px; height: 20px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px; font-weight: 600;
+    color: #73D961;
+    text-align: center;
+    position: sticky; left: 0; z-index: 1;
+  }
+  table.sheet th.sh-row.sh-active {
+    background: #135a38;
+    color: #fff;
+  }
+  table.sheet td.sh-cell {
+    border: 1px solid #1a6b45;
+    width: 40px; min-width: 40px; max-width: 40px; height: 20px;
+    padding: 0 3px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    color: #d0f0d0;
+    background: #0F4F32;
+    cursor: cell;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    position: relative;
+    user-select: none;
+  }
+  table.sheet td.sh-cell.sh-hl {
+    background: #73D961;
+    border-color: #73D961;
+  }
+  table.sheet td.sh-cell.sh-anchor {
+    outline: 2px solid #73D961;
+    outline-offset: -2px;
+    z-index: 1;
+  }
+  table.sheet td.sh-cell.sh-editing {
+    outline: 2px solid #73D961;
+    outline-offset: -2px;
+    z-index: 1;
+  }
+  .sh-editor {
+    display: none;
+    position: absolute; inset: 0;
+    border: none; outline: none;
+    padding: 0 3px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    color: #fff;
+    background: rgba(0,0,0,0.25);
+  }
+  table.sheet td.sh-cell.sh-editing .sh-editor { display: block; }
+
+  /* Scrollbar dark theme */
+  #sheet-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+  #sheet-scroll::-webkit-scrollbar-track { background: #0a3d26; }
+  #sheet-scroll::-webkit-scrollbar-thumb { background: #1a6b45; border-radius: 5px; }
+  #sheet-scroll::-webkit-scrollbar-thumb:hover { background: #73D961; }
+  #sheet-scroll::-webkit-scrollbar-corner { background: #0a3d26; }
+
+  .exit-text {
+    position: absolute;
+    z-index: 21;
+    pointer-events: none;
+    font-family: 'Times New Roman', Georgia, serif;
+    font-size: 80px;
+    font-weight: 900;
+    line-height: 1;
+    color: #000;
+    white-space: nowrap;
+  }
+  .exit-text .green-word {
+    color: #0F4F32;
+    position: relative;
+  }
+  #exit-text3 {
+    line-height: 1.3;
+  }
+  #ch-text {
+    position: relative;
+  }
+  #art-text {
+    color: #0F4F32;
+    transition: color 0.6s ease;
+  }
+  #scribble {
+    position: absolute;
+    left: -3px;
+    top: 20px;
+    width: 71.4px;
+    height: auto;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: multiply;
+    object-fit: contain;
+  }
+
+  #beyond-banner {
+    position: absolute;
+    z-index: 4;
+    pointer-events: none;
+    background: #0F4F32;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 20px 14px 5px;
+  }
+  #beyond-banner span {
+    font-family: 'Times New Roman', serif;
+    font-weight: 400;
+    color: #fff;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  #create-text {
+    position: absolute;
+    left: 20px;
+    bottom: 14px;
+    font-family: 'Times New Roman', serif;
+    font-weight: 400;
+    color: #73D961;
+    white-space: nowrap;
+    line-height: 1;
+    transform: translateY(100%);
+    transition: transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    opacity: 0;
+  }
+  #create-text.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  #beyond-banner .beyond-grid {
+    font-style: italic;
+    color: #73D961;
+  }
+
+  #photo1 {
+    position: absolute;
+    z-index: 21;
+    object-fit: cover;
+    pointer-events: none;
+    transform-origin: top left;
+  }
+
+  #white-rect {
+    position: absolute;
+    z-index: 21;
+    pointer-events: none;
+    background: #fff;
+    border: 1px solid #0F4F32;
+    padding: 30px 24px 30px 34px;
+    overflow: hidden;
+  }
+  .emoji-spring {
+    display: inline-block;
+    animation: emojiSpring 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  @keyframes emojiSpring {
+    0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+    30% { transform: scale(1.6) rotate(10deg); opacity: 1; }
+    50% { transform: scale(0.8) rotate(-5deg); }
+    70% { transform: scale(1.2) rotate(3deg); }
+    85% { transform: scale(0.95) rotate(-1deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+
+  #x-square {
+    position: absolute;
+    z-index: 22;
+    pointer-events: auto;
+    cursor: pointer;
+    background: #0F4F32;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #73D961;
+    font-weight: 300;
+    line-height: 1;
+    transition: background 0.2s ease;
+  }
+  #x-square:hover {
+    background: #73D961;
+    color: #0F4F32;
+  }
+
+  .text-line {
+    display: block;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: #000;
+    line-height: 1.4;
+  }
+  .text-line span {
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+    cursor: default;
+  }
+  .text-line span:hover {
+    transform: translateY(-8px) !important;
+    color: #73D961 !important;
+  }
+
+  #username {
+    position: absolute;
+    z-index: 21;
+    pointer-events: auto;
+    cursor: default;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 39px;
+    font-weight: 400;
+    color: #000;
+    white-space: nowrap;
+    background: #fff;
+    padding: 10px 17px;
+    border: 2px dashed #0F4F32;
+  }
+  #username span {
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+  }
+  #username span:hover {
+    transform: translateY(-12px) !important;
+    color: #73D961 !important;
+  }
+
+  #click-banner {
+    position: absolute;
+    z-index: 21;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  #click-banner-inner {
+    display: inline-block;
+    white-space: nowrap;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: #000;
+    letter-spacing: 0.05em;
+    animation: bannerScroll 24s linear infinite;
+  }
+  @keyframes bannerScroll {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+  }
+
+  .click-label {
+    position: absolute;
+    z-index: 21;
+    pointer-events: auto;
+    cursor: pointer;
+    font-family: 'Times New Roman', Georgia, serif;
+    font-size: 23px;
+    font-weight: 600;
+    color: #000;
+    white-space: nowrap;
+    display: none;
+    line-height: 1;
+    padding: 0 10px;
+    transition: color 0.2s ease, font-style 0.2s ease, background 0.2s ease, font-weight 0.2s ease;
+  }
+  #color-swatches {
+    position: absolute;
+    z-index: 21;
+    display: none;
+    flex-direction: row;
+  }
+  .color-swatch {
+    flex: 1;
+    cursor: pointer;
+    border: 1px solid #1a6b45;
+    box-sizing: border-box;
+    transition: opacity 0.2s ease;
+  }
+  .color-swatch:hover {
+  }
+  .color-swatch {
+    position: relative;
+  }
+  .color-swatch.swatch-active::after {
+    content: attr(data-color);
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 8px;
+    color: #fff;
+    line-height: 1;
+  }
+  .grid-hover {
+    position: absolute;
+    z-index: 21;
+    pointer-events: auto;
+    cursor: pointer;
+    display: none;
+    transition: background 0.2s ease;
+  }
+  .grid-hover:hover {
+    background: #0F4F32;
+  }
+  .click-label.erase-active {
+    color: #73D961;
+    font-style: italic;
+    font-weight: 100;
+    background: #0F4F32;
+  }
+  .click-label:hover {
+    color: #73D961;
+    font-style: italic;
+    font-weight: 100;
+    background: #0F4F32;
+  }
+  #click-label6 {
+    color: #73D961;
+    font-style: italic;
+    font-weight: 100;
+    font-size: 24px;
+    background: #0F4F32;
+  }
+  #click-label6:hover {
+    color: #fff;
+  }
+  #saved-thumbs {
+    position: absolute;
+    z-index: 21;
+    display: none;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 3px;
+    align-items: flex-start;
+    align-content: flex-start;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+  .thumb-wrap {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .thumb-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #0F4F32;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  .thumb-wrap:hover::after {
+    opacity: 1;
+  }
+  .thumb-wrap.thumb-selected::after {
+    opacity: 1;
+    background: #BEE1B0;
+  }
+  #saved-thumbs canvas {
+    border: 1px solid #1a6b45;
+    width: 100px;
+    height: 100px;
+  }
+  #thumb-overlays {
+    position: absolute;
+    inset: 0;
+    z-index: 24;
+    pointer-events: none;
+  }
+  .overlay-frame {
+    position: absolute;
+    pointer-events: auto;
+    cursor: grab;
+    transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .overlay-frame canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    border: 8px solid #fff;
+    border-top-width: 38px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+  .overlay-close {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 21px;
+    height: 21px;
+    background: #0F4F32;
+    border: 1px solid #0F4F32;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    pointer-events: auto;
+    font-size: 12px;
+    font-family: sans-serif;
+    color: #73D961;
+    line-height: 1;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .overlay-close:hover,
+  .overlay-btn:hover {
+    background: #fff;
+    color: #000;
+    border-color: #000;
+  }
+  .overlay-btn {
+    position: absolute;
+    top: 8px;
+    width: 21px;
+    height: 21px;
+    background: #0F4F32;
+    border: 1px solid #0F4F32;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    pointer-events: auto;
+    font-size: 12px;
+    font-family: sans-serif;
+    color: #73D961;
+    line-height: 1;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .overlay-comment {
+    position: absolute;
+    top: 8px;
+    left: 40px;
+    right: 65px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    font-style: italic;
+    color: #0F4F32;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    line-height: 21px;
+  }
+  .chart-img {
+    position: absolute;
+    z-index: 23;
+    pointer-events: none;
+    width: 250px;
+    height: auto;
+    border: none;
+    box-shadow: none;
+  }
+
+  #start-box1 {
+    position: absolute;
+    z-index: 21;
+    background: #0F4F32;
+    width: 25px;
+    height: 25px;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  #start-box1:hover {
+    background: #73D961;
+  }
+  #start-box2 {
+    position: absolute;
+    z-index: 21;
+    background: #fff;
+    border: 1px solid #0F4F32;
+    width: 181px;
+    height: 25px;
+    pointer-events: none;
+    overflow: hidden;
+    margin-left: 0px;
+  }
+  #start-box2-inner {
+    display: inline-block;
+    white-space: nowrap;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: #000;
+    letter-spacing: 0.05em;
+    line-height: 25px;
+    animation: startBox2Scroll 24s linear infinite;
+  }
+  @keyframes startBox2Scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .overlay-expand {
+    right: 35px;
+    font-size: 15px;
+  }
+  .overlay-trash {
+    right: 8px;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <div id="gridlines-under"></div>
+  <div id="gridlines"></div>
+  <div id="gridlines-over"></div>
+  <div id="exit-green-fill">
+    <div id="sheet-wrap">
+      <div id="sheet-scroll">
+        <table class="sheet" id="sheetTable"></table>
+      </div>
+    </div>
+    <div id="thumb-overlays"></div>
+  </div>
+  <div id="beyond-banner"><span><span class="beyond-grid"></span></span><span id="create-text">create</span></div>
+  <img id="photo1" src="img/6889338 3.png" alt="">
+  <div id="white-rect"><span class="text-line" id="tline1">My secret talent is that I can make an amazing, beautiful,</span><span class="text-line" id="tline2">detailed chart in Excel and then IMMEDIATELY forget</span><span class="text-line" id="tline3">how I did it and never be able to recreate it 😒</span></div>
+  <div id="exit-text1" class="exit-text">Make</div>
+  <div id="exit-text2" class="exit-text">your own</div>
+  <div id="exit-text3" class="exit-text">amazing, beautiful <span class="green-word"><span id="ch-text">ch</span><video id="scribble" src="mov/scribble.mp4" muted playsinline preload="auto"></video><span id="art-text">art.</span></span></div>
+  <div id="x-square">&#x2715;</div>
+  <div id="click-banner"><span id="click-banner-inner"></span></div>
+  <div id="click-label7" class="click-label">erase</div>
+  <div id="click-label1" class="click-label">erase all</div>
+  <div id="click-label4" class="click-label">color</div>
+  <div id="color-swatches">
+    <div class="color-swatch" data-color="#005E31"></div>
+    <div class="color-swatch" data-color="#BEE1B0"></div>
+    <div class="color-swatch" data-color="#48A346"></div>
+    <div class="color-swatch" data-color="#7BD960"></div>
+  </div>
+  <div id="grid-hover1" class="grid-hover"></div>
+  <div id="grid-hover2" class="grid-hover"></div>
+  <div id="prompt-fill"></div>
+  <div id="click-label5" class="click-label">prompt</div>
+  <div id="click-label6" class="click-label">generate</div>
+  <div id="click-label2" class="click-label">save</div>
+  <div id="saved-thumbs"></div>
+  <div id="username"><span>M</span><span>e</span><span>r</span><span>m</span><span>a</span><span>n</span><span>d</span><span>a</span><span>2</span><span>6</span><span>9</span><span>4</span></div>
+  <img id="chart-img1" class="chart-img" src="img/chart 2.png" alt="">
+  <img id="chart-img2" class="chart-img" src="img/chart 2.png" alt="">
+  <img id="chart-img3" class="chart-img" src="img/chart 2.png" alt="">
+  <div id="start-box1"></div>
+  <div id="start-box2"><span id="start-box2-inner"></span></div>
+</div>
+
+<script>
+// ─── Layout constants (matching page 1) ────────────────────────────────────
+const lerp = (a, b, t) => a + (b - a) * t;
+let emojiAdded = false;
+let scribblePlayed = false;
+let typeStartTime = null;
+
+// ─── Scribble ended → color "art." light green ─────────────────────────────
+let scribbleEnded = false;
+const artTextEl = document.getElementById('art-text');
+document.getElementById('scribble').addEventListener('ended', () => {
+  artTextEl.style.color = '#73D961';
+  scribbleEnded = true;
+});
+
+// ─── Start box scrolling text ────────────────────────────────────────────────
+const startBox2Inner = document.getElementById('start-box2-inner');
+const sb2Unit = 'CLICK\u00A0\u00A0<<<<<<<< \u00A0\u00A0';
+startBox2Inner.textContent = sb2Unit.repeat(20);
+
+// ─── Click banner setup ─────────────────────────────────────────────────────
+const clickBanner = document.getElementById('click-banner');
+const clickBannerInner = document.getElementById('click-banner-inner');
+const bannerFromWord = 'SCROLL';
+const bannerToWord = 'CLICK';
+const bannerSep = '\u00A0\u00A0>>>>>>>> \u00A0\u00A0';
+const bannerMaxLen = Math.max(bannerFromWord.length, bannerToWord.length);
+let bannerHTML = '';
+for (let r = 0; r < 20; r++) {
+  for (let i = 0; i < bannerMaxLen; i++) {
+    const fc = bannerFromWord[i] || '';
+    const tc = bannerToWord[i] || '';
+    const display = fc === ' ' ? '\u00A0' : fc;
+    const displayTo = tc || '';
+    bannerHTML += `<span class="bw-slot" style="display:inline-block;position:relative"><span class="bw-from" style="transition:opacity 0.4s ease">${display}</span><span class="bw-to" style="position:absolute;left:0;top:0;opacity:0;transition:opacity 0.4s ease">${displayTo}</span></span>`;
+  }
+  bannerHTML += bannerSep;
+}
+clickBannerInner.innerHTML = bannerHTML;
+const bannerSlots = Array.from(clickBannerInner.querySelectorAll('.bw-slot'));
+let bannerSwitched = false;
+
+let scrollProgress = 0, smoothScroll = 0;
+let expandStartTime = 0, expandStarted = false;
+const expandDuration = 2.0; // seconds for expand animation
+let xClickTime = 0, xClickProgress = 0, xClickFrom = 0, xClickTo = 0, xIsUp = false;
+
+// ─── Green box click → start expand ─────────────────────────────────────────
+document.getElementById('start-box1').addEventListener('click', () => {
+  if (!expandStarted) {
+    expandStarted = true;
+    expandStartTime = performance.now();
+  }
+});
+
+const createText = document.getElementById('create-text');
+document.getElementById('x-square').addEventListener('click', () => {
+  if (!scribbleEnded && !xIsUp) return;
+  xClickFrom = xClickProgress;
+  xClickTo = xIsUp ? 0 : 1;
+  xIsUp = !xIsUp;
+  xClickTime = performance.now();
+  if (xIsUp) {
+    createText.classList.add('show');
+  } else {
+    createText.classList.remove('show');
+  }
+});
+
+document.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (!expandStarted) return; // no scroll until expand is triggered
+  scrollProgress += e.deltaY * 0.003;
+  scrollProgress = Math.max(1, Math.min(8, scrollProgress)); // clamp min to 1 (post-expand)
+}, { passive: false });
+
+function frame() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  const fixedLeft = vw * 0.12 + 490;
+  const fixedTop = vh / 2 - 200;
+  const fixedH = 400;
+  const padX = 80;
+  const padY = 40;
+  const finalW = vw - fixedLeft + padX;
+  const finalH = fixedH + padY * 2 + 25 + 16;
+
+  const bxTop = fixedTop - padY - 16;
+  const bxBot = bxTop + finalH;
+
+  const colX1 = fixedLeft - 39;
+  const colX2 = fixedLeft;
+
+  // Expanded positions (page 1 reference)
+  const h1 = bxTop - 145;
+  const h2 = bxTop - 98;
+  const h3 = bxTop;
+  const h4 = bxBot;
+  const h5 = bxBot + 46;
+  const h6 = bxBot + 107;
+
+  const centerY = vh / 2;
+
+  // Collapsed positions (sr = 0, matching end of page 1)
+  const rh1 = centerY + (h1 - centerY) * 0.6;
+  const rh2 = centerY;
+  const rh3 = centerY;
+  const rh4 = centerY;
+  const rh5 = centerY;
+  const rh6 = centerY;
+
+  const midH23 = (rh2 + rh3) / 2;
+  const globeLeftX = fixedLeft - finalH * 1.337 - 38;
+  const globeRightX = fixedLeft - 38;
+
+  // Page 2 new horizontal guides
+  // Two guides near top (below banner), two near bottom
+  const p2h1Final = vh * 0.525;
+  const p2h2 = vh * 0.565 - 15;
+  const p2h5Final = p2h2 + (vh * 1.225 - 15 + 39 + 40 - p2h2) * 0.75 - 120;
+  const p2h6Final = p2h5Final + 240;
+  const p2d1Final = p2h5Final + 60;
+  const p2d2Final = p2h5Final + 120;
+  const p2d3Final = p2h5Final + 180;
+  const p2h3Final = vh * 1.225 - 15 + 39 + 40;
+  const p2h4Final = vh * 1.275 + 40;
+
+  const container = document.getElementById('container');
+
+  // ── Scroll animation ────────────────────────────────────────────────────
+  // Expand phase: time-based, triggered by green box click
+  let expandRaw = 0;
+  if (expandStarted) {
+    const expandElapsed = (performance.now() - expandStartTime) / 1000;
+    expandRaw = Math.min(1, expandElapsed / expandDuration);
+    // Once expand finishes, allow scroll to drive subsequent phases
+    if (expandRaw >= 1) {
+      smoothScroll = Math.max(1, smoothScroll);
+      smoothScroll += (scrollProgress - smoothScroll) * 0.005;
+    }
+  }
+  const expandScroll = 1 - Math.pow(1 - expandRaw, 3);
+
+  // Container offset (matching page 1 collapse, shifts up 75px at start)
+  const collapseShift = -120 * (1 - expandScroll);
+  const offset = vh * -0.4 + collapseShift;
+  container.style.transform = `translateY(${offset}px)`;
+  // Photo edges (guides wipe the photo on from top-left)
+  const photoLeft = globeLeftX + 170;
+  const photoW = (colX1 - globeLeftX) * 1.1;
+  const photoH = p2h3Final - p2h2;
+  const p2h1 = lerp(rh3, p2h1Final, expandScroll);
+  const photoTop = lerp(rh3, p2h2, expandScroll);
+  const p2h5 = lerp(rh3, p2h5Final, expandScroll);
+  const p2d1 = lerp(rh3, p2d1Final, expandScroll);
+  const p2d2 = lerp(rh3, p2d2Final, expandScroll);
+  const p2d3 = lerp(rh3, p2d3Final, expandScroll);
+  const p2h6 = lerp(rh3, p2h6Final, expandScroll);
+  const p2h3 = lerp(rh3, p2h3Final, expandScroll);
+  const p2h4 = lerp(rh3, p2h4Final, expandScroll);
+  const photoLeftDraw = lerp(globeLeftX, photoLeft, expandScroll);
+  const photoRight = lerp(photoLeft, photoLeft + photoW, expandScroll);
+  const photoBottom = p2h3;
+  const colX2Draw = Math.max(colX2, photoRight);
+
+  // ── Exit animation (white box + guides collapse up) ───────────────────
+  const exitStart = 1.5;
+  const exitDuration = 1.69;
+  const exitRaw = Math.max(0, Math.min(1, (smoothScroll - exitStart) / exitDuration));
+  const exitT = 1 - Math.pow(1 - exitRaw, 3);
+  const wrVisibleHFull = p2d3Final - p2h5Final;
+  const moveUp = exitT * (wrVisibleHFull + 20);
+
+  // Photo collapses to colX2 (third vertical guide)
+  const photoTargetExpand = (colX1 - photoLeft) / photoW;
+  const photoExpandExit = lerp(expandScroll, photoTargetExpand, exitT);
+  let photoTopDraw = lerp(rh3, p2h2, photoExpandExit);
+  let p2h1Draw = lerp(p2h1, (rh3 + photoTopDraw) / 2, exitT);
+  const photoBottomBase = lerp(rh3, p2h3Final, photoExpandExit);
+  let photoBottomDraw = photoBottomBase - 200 * exitT;
+
+  // Collapse dashed guides, p2h5 and p2h6 into photoBottomDraw
+  const photoBottomFinal = lerp(rh3, p2h3Final, photoTargetExpand) - 200;
+  let p2h5Draw = lerp(p2h5, photoBottomFinal, exitT);
+  let p2d1Draw = lerp(p2d1, photoBottomFinal, exitT);
+  let p2d2Draw = lerp(p2d2, photoBottomFinal, exitT);
+  let p2d3Draw = lerp(p2d3, photoBottomFinal, exitT);
+  let p2h6Draw = lerp(p2h6, photoBottomFinal, exitT);
+  let photoRightDraw = lerp(photoLeftDraw, photoLeft + photoW, photoExpandExit);
+  let p2h4Draw = lerp(rh3, p2h4Final, photoExpandExit) - 200 * exitT;
+  let colX2DrawExit = lerp(colX2Draw, colX1, exitT);
+  let exitGuideY = lerp(p2h4Draw, vh * 1.4, exitT);
+  const xBoxSize = p2h4Draw - photoBottomDraw;
+  let exitGuideX = lerp(photoRightDraw, photoRightDraw + xBoxSize, exitT);
+  // Guide 5 line: sticks to photo right edge, then expands after delay
+  const g5DelayedRaw = Math.max(0, (exitT - 0.9) / 0.1);
+  const g5DelayedT = 1 - Math.pow(1 - g5DelayedRaw, 3);
+  const exitGuideXLine = lerp(photoRightDraw, photoRightDraw + xBoxSize, g5DelayedT);
+  const rightGuideX = vw - globeLeftX;
+  let exitGuideXRight = lerp(photoRightDraw, (exitGuideX + rightGuideX) / 2 + 830, exitT);
+
+  // Phase 2: dashed lines + text (after white box fully collapses)
+  const exit2Start = exitStart + exitDuration * 0.7;
+  const exit2Duration = 1.69;
+  const exit2Raw = Math.max(0, Math.min(1, (smoothScroll - exit2Start) / exit2Duration));
+  const exit2T = 1 - Math.pow(1 - exit2Raw, 3);
+
+  // 3 dashed lines expanding upward from photo bottom
+  const photoSpan = photoBottomDraw - photoTopDraw;
+  let exitDash1 = lerp(photoBottomDraw, photoBottomDraw - photoSpan * 0.25, exit2T);
+  let exitDash2 = lerp(photoBottomDraw, photoBottomDraw - photoSpan * 0.5, exit2T);
+  let exitDash3 = lerp(photoBottomDraw, photoBottomDraw - photoSpan * 0.75, exit2T);
+
+  // 2 white guides animate down from photo bottom into green box
+  const greenBoxBot = exitGuideY;
+  const greenBoxSpan = greenBoxBot - p2h4Draw;
+  const whiteGuideTop = lerp(p2h4Draw, p2h4Draw + greenBoxSpan * 0.33 - 185, exit2T);
+  const whiteGuideBot = lerp(p2h4Draw, p2h4Draw + greenBoxSpan * 0.66 + 193, exit2T);
+
+  // White box right edge — driven by expand animation
+  const wrTEarlyRaw = Math.min(1, Math.max(0, (expandRaw - 0.33) / 0.67));
+  const wrTEarly = 1 - Math.pow(1 - wrTEarlyRaw, 2);
+  const wrRightXBase = colX1 + lerp(0, photoLeft + photoW - colX1 + 550, wrTEarly);
+  let wrRightX = lerp(wrRightXBase, exitGuideX, exitT);
+
+  // ── Phase 3: X-button click — slide excel up / back down ──────────────
+  if (xClickTime > 0) {
+    const elapsed = (performance.now() - xClickTime) / 1000;
+    const duration = 1.4;
+    const raw = Math.min(1, elapsed / duration);
+    const eased = 1 - Math.pow(1 - raw, 3);
+    xClickProgress = lerp(xClickFrom, xClickTo, eased);
+  }
+  const cT = xClickProgress;
+
+  // Target: photoBottomDraw slides up to photoTopDraw (fourth gridline from top)
+  const clickTarget = photoTopDraw;
+  const preClickPhotoBottom = photoBottomDraw;
+  const slideAmount = (photoBottomDraw - clickTarget) * cT;
+
+  // Slide the excel block up (X box + green fill top — bottom gridline stays)
+  const preSlideP2h4 = p2h4Draw;
+  photoBottomDraw -= slideAmount;
+  p2h4Draw -= slideAmount;
+
+  // 4 dashed guides expand down from p2h4Draw, aligned with excel rows (21px each)
+  const rowH = 21; // 20px cell + 1px border
+  const clickDashOffset = rowH * 3;
+  const clickDash1 = lerp(p2h4Draw, p2h4Draw + clickDashOffset + rowH * 2, cT);
+  const clickDash2 = lerp(p2h4Draw, p2h4Draw + clickDashOffset + rowH * 4, cT);
+  const clickDash3 = lerp(p2h4Draw, p2h4Draw + clickDashOffset + rowH * 6, cT);
+  const clickDash4 = lerp(p2h4Draw, p2h4Draw + clickDashOffset + rowH * 8, cT);
+  const clickDash5 = lerp(p2h4Draw, p2h4Draw + clickDashOffset + rowH * 10, cT);
+  const clickDash6 = lerp(p2h4Draw, p2h4Draw + clickDashOffset + rowH * 12, cT);
+  const clickDash7 = lerp(p2h4Draw, p2h4Draw + clickDashOffset + rowH * 20, cT);
+  const clickDash10 = lerp(p2h4Draw, p2h4Draw + clickDashOffset + rowH * 22, cT);
+  const thumbRowH = 100 + 4; // thumbnail height + gap
+  const clickDash11Target = p2h4Draw + clickDashOffset + rowH * 22 + 2 + 3 + thumbRowH * 4 + 4;
+  const clickDash11 = lerp(p2h4Draw, clickDash11Target, cT);
+  const clickDash9 = lerp(p2h4Draw, clickDash11Target + rowH * 2, cT);
+  const clickDash8 = lerp(p2h4Draw, clickDash11Target + rowH * 4, cT);
+
+  // Position click labels between dashed guides
+  const clickLabels = [
+    { el: document.getElementById('click-label4'), top: clickDash1, bot: clickDash2 },
+    { el: document.getElementById('click-label7'), top: clickDash2, bot: clickDash3 },
+    { el: document.getElementById('click-label1'), top: clickDash3, bot: clickDash4, textOffsetY: -3 },
+    { el: document.getElementById('click-label5'), top: clickDash5, bot: clickDash6, textOffsetY: -5 },
+    { el: document.getElementById('click-label6'), top: clickDash7, bot: clickDash10, leftAt: 'exitGuideX', swatchSize: true },
+    { el: document.getElementById('click-label2'), top: clickDash9, bot: clickDash8, centered: true },
+  ];
+  const swatchW = (exitGuideX - photoLeft - 26) / 4;
+  const swatchHSize = Math.max(0, clickDash2 - clickDash1);
+  for (const { el, top, bot, halfWidth, offsetY, leftAt, swatchSize, textOffsetY, centered } of clickLabels) {
+    if (cT > 0.01) {
+      const lx = leftAt === 'exitGuideX' ? exitGuideX - 159 : globeLeftX;
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = (leftAt === 'exitGuideX' || centered) ? 'center' : 'flex-start';
+      el.style.paddingLeft = (leftAt === 'exitGuideX' || centered) ? '0' : '20px';
+      el.style.left = lx + 'px';
+      el.style.top = (top + (offsetY || 0)) + 'px';
+      el.style.paddingBottom = textOffsetY ? (-textOffsetY * 2) + 'px' : '0';
+      el.style.width = (swatchSize ? swatchW : (halfWidth ? (photoLeft - globeLeftX) / 2 : (photoLeft - globeLeftX))) + 'px';
+      el.style.height = (swatchSize ? swatchHSize : (bot - top)) + 'px';
+      el.style.opacity = 1;
+      el.style.clipPath = `inset(0px 0px ${Math.max(0, bot - top)}px 0px)`;
+      const clipTop = Math.max(0, bot - top - (bot - top) * cT);
+      el.style.clipPath = `inset(${clipTop}px 0px 0px 0px)`;
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  // Position color swatches — top sticks to clickDash1, bottom sticks to clickDash2
+  const swatchesEl = document.getElementById('color-swatches');
+  if (cT > 0.01) {
+    const swatchH = Math.max(0, clickDash2 - clickDash1);
+    swatchesEl.style.display = 'flex';
+    swatchesEl.style.left = photoLeft + 'px';
+    swatchesEl.style.top = clickDash1 + 'px';
+    swatchesEl.style.width = (exitGuideX - photoLeft - 26) + 'px';
+    swatchesEl.style.height = swatchH + 'px';
+    swatchesEl.style.clipPath = '';
+    swatchesEl.querySelectorAll('.color-swatch').forEach(s => {
+      s.style.background = s.dataset.color;
+    });
+  } else {
+    swatchesEl.style.display = 'none';
+  }
+
+  // Grid hover boxes under erase (clickDash3-4 and clickDash4-5)
+  const gh1 = document.getElementById('grid-hover1');
+  const gh2 = document.getElementById('grid-hover2');
+  if (cT > 0.01) {
+    const ghLeft = globeLeftX;
+    const ghWidth = photoLeft - globeLeftX;
+    gh1.style.display = 'block';
+    gh1.style.left = ghLeft + 'px';
+    gh1.style.top = clickDash4 + 'px';
+    gh1.style.width = ghWidth + 'px';
+    gh1.style.height = Math.max(0, clickDash5 - clickDash4) + 'px';
+    gh2.style.display = 'none';
+  } else {
+    gh1.style.display = 'none';
+    gh2.style.display = 'none';
+  }
+
+  // Prompt fill between horizontal lines 6-7, vertical lines 2-3
+  const promptFill = document.getElementById('prompt-fill');
+  if (cT > 0.01) {
+    promptFill.style.position = 'absolute';
+    promptFill.style.zIndex = '2';
+    promptFill.style.left = photoLeft + 'px';
+    promptFill.style.top = clickDash6 + 'px';
+    promptFill.style.width = (exitGuideX - photoLeft - 26) + 'px';
+    promptFill.style.height = Math.max(0, clickDash7 - clickDash6) + 'px';
+    promptFill.style.background = '#BEE1B0';
+    promptFill.style.display = 'block';
+  } else {
+    promptFill.style.display = 'none';
+  }
+
+  // Position saved thumbnails between clickDash8 and clickDash9, right of photoLeft
+  const savedThumbs = document.getElementById('saved-thumbs');
+  if (cT > 0.01) {
+    savedThumbs.style.display = 'flex';
+    savedThumbs.style.left = (photoLeft + 3) + 'px';
+    savedThumbs.style.top = (clickDash10 + 2) + 'px';
+    savedThumbs.style.width = (exitGuideX - photoLeft) + 'px';
+    savedThumbs.style.height = Math.max(0, clickDash9 - clickDash10) + 'px';
+  } else {
+    savedThumbs.style.display = 'none';
+  }
+
+  // All intermediate guides collapse into the same target line
+  p2h5Draw = lerp(p2h5Draw, clickTarget, cT);
+  p2d1Draw = lerp(p2d1Draw, clickTarget, cT);
+  p2d2Draw = lerp(p2d2Draw, clickTarget, cT);
+  p2d3Draw = lerp(p2d3Draw, clickTarget, cT);
+  p2h6Draw = lerp(p2h6Draw, clickTarget, cT);
+  exitDash1 = lerp(exitDash1, clickTarget, cT);
+  exitDash2 = lerp(exitDash2, clickTarget, cT);
+  exitDash3 = lerp(exitDash3, clickTarget, cT);
+
+  // ── Gridlines (matching page 1 at sr=0) ────────────────────────────────
+  const sbOpacity = Math.max(0, 1 - expandScroll);
+  const sbCollapseT = Math.min(1, expandScroll / 0.6);
+  const sbGuide1X = lerp(colX1 + 25, colX1, sbCollapseT);
+  const sbGuide2X = lerp(colX1 + 205, colX1, sbCollapseT);
+  const sbGuide1XOpacity = Math.min(1, (sbGuide1X - colX1) / 5);
+  const sbGuide2XOpacity = Math.min(1, (sbGuide2X - colX1) / 5);
+  const sbGuide1Y = Math.max(rh3 + 387.5, p2h4Draw);
+  const sbGuide2Y = Math.max(rh3 + 410.5, p2h4Draw);
+  const sbGuide3Y = p2h4Draw;
+  const sbGuide1YOpacity = Math.max(0, 1 - exitT * 2);
+  const sbGuide2YOpacity = Math.max(0, 1 - exitT * 2);
+  const glEl = document.getElementById('gridlines');
+
+  glEl.innerHTML =
+    `<svg width="${vw}" height="${vh * 2}" style="position:absolute;left:0;top:0">` +
+    `<line x1="0" y1="${midH23}" x2="${vw}" y2="${midH23}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4" opacity="0"/>` +
+    `<line x1="0" y1="${rh1}" x2="${vw}" y2="${rh1}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="0" y1="${rh2}" x2="${vw}" y2="${rh2}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4" opacity="0"/>` +
+    `<line x1="0" y1="${rh3}" x2="${vw}" y2="${rh3}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="0" y1="${rh4}" x2="${vw}" y2="${rh4}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="0" y1="${rh5}" x2="${vw}" y2="${rh5}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4" opacity="0"/>` +
+    `<line x1="0" y1="${rh6}" x2="${vw}" y2="${rh6}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="0" y1="${p2h1Draw}" x2="${vw}" y2="${p2h1Draw}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="0" y1="${photoTopDraw}" x2="${vw}" y2="${photoTopDraw}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="0" y1="${photoBottomDraw}" x2="${vw}" y2="${photoBottomDraw}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="0" y1="${p2d1Draw}" x2="${vw}" y2="${p2d1Draw}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` +
+    `<line x1="0" y1="${p2d2Draw}" x2="${vw}" y2="${p2d2Draw}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` +
+    `<line x1="0" y1="${p2d3Draw}" x2="${vw}" y2="${p2d3Draw}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` +
+    `<line x1="0" y1="${p2h6Draw}" x2="${vw}" y2="${p2h6Draw}" stroke="#0F4F32" stroke-width="0.7" opacity="${Math.max(0, 1 - exitT * 2)}"/>` +
+    `<line x1="0" y1="${p2h4Draw}" x2="${vw}" y2="${p2h4Draw}" stroke="#0F4F32" stroke-width="0.7" opacity="${Math.max(0, 1 - exitT * 2)}"/>` +
+    (exitT > 0 ? `<line x1="0" y1="${exitGuideY}" x2="${vw}" y2="${exitGuideY}" stroke="#0F4F32" stroke-width="0.7"/>` : '') +
+    (g5DelayedT > 0.01 ? `<line x1="${exitGuideXLine}" y1="0" x2="${exitGuideXLine}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7"/>` : '') +
+    (exitT > 0 ? `<line x1="${exitGuideXRight}" y1="0" x2="${exitGuideXRight}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7"/>` : '') +
+    (exit2T > 0 ? `<line x1="0" y1="${exitDash1}" x2="${vw}" y2="${exitDash1}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (exit2T > 0 ? `<line x1="0" y1="${exitDash2}" x2="${vw}" y2="${exitDash2}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (exit2T > 0 ? `<line x1="0" y1="${exitDash3}" x2="${vw}" y2="${exitDash3}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    `<line x1="${photoLeftDraw}" y1="0" x2="${photoLeftDraw}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="${Math.min(colX1, photoRightDraw)}" y1="0" x2="${Math.min(colX1, photoRightDraw)}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="${photoRightDraw >= colX1 ? photoRightDraw : Math.min(colX1, photoRightDraw)}" y1="0" x2="${photoRightDraw >= colX1 ? photoRightDraw : Math.min(colX1, photoRightDraw)}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="${wrRightX}" y1="0" x2="${wrRightX}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="${vw - globeLeftX}" y1="0" x2="${vw - globeLeftX}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="0" y1="${sbGuide1Y}" x2="${vw}" y2="${sbGuide1Y}" stroke="#0F4F32" stroke-width="0.7" opacity="${sbGuide1YOpacity}"/>` +
+    `<line x1="0" y1="${sbGuide2Y}" x2="${vw}" y2="${sbGuide2Y}" stroke="#0F4F32" stroke-width="0.7" opacity="${sbGuide2YOpacity}"/>` +
+    `<line x1="0" y1="${sbGuide3Y}" x2="${vw}" y2="${sbGuide3Y}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `<line x1="${sbGuide1X}" y1="0" x2="${sbGuide1X}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7" opacity="${sbGuide1XOpacity}"/>` +
+    `<line x1="${sbGuide2X}" y1="0" x2="${sbGuide2X}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7" opacity="${sbGuide2XOpacity}"/>` +
+    (cT > 0 ? `<line x1="0" y1="${clickDash1}" x2="${exitGuideX}" y2="${clickDash1}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (cT > 0 ? `<line x1="0" y1="${clickDash2}" x2="${exitGuideX}" y2="${clickDash2}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (cT > 0 ? `<line x1="0" y1="${clickDash3}" x2="${exitGuideX}" y2="${clickDash3}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (cT > 0 ? `<line x1="0" y1="${clickDash4}" x2="${exitGuideX}" y2="${clickDash4}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (cT > 0 ? `<line x1="0" y1="${clickDash5}" x2="${exitGuideX}" y2="${clickDash5}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (cT > 0 ? `<line x1="0" y1="${clickDash6}" x2="${exitGuideX}" y2="${clickDash6}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (cT > 0 ? `<line x1="0" y1="${clickDash7}" x2="${exitGuideX}" y2="${clickDash7}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (cT > 0 ? `<line x1="0" y1="${clickDash10}" x2="${exitGuideX}" y2="${clickDash10}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (cT > 0 ? `<line x1="0" y1="${clickDash11}" x2="${exitGuideX}" y2="${clickDash11}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (cT > 0 ? `<line x1="0" y1="${clickDash9}" x2="${exitGuideX}" y2="${clickDash9}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    (cT > 0 ? `<line x1="0" y1="${clickDash8}" x2="${exitGuideX}" y2="${clickDash8}" stroke="#0F4F32" stroke-width="0.7" stroke-dasharray="4,4"/>` : '') +
+    `</svg>`;
+
+  // ── Gridlines overlay (on top of photo) ──────────────────────────────
+  const glOver = document.getElementById('gridlines-over');
+  glOver.innerHTML =
+    `<svg width="${vw}" height="${vh * 2}" style="position:absolute;left:0;top:0">` +
+    `<line x1="0" y1="${p2h5Draw}" x2="${vw}" y2="${p2h5Draw}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `</svg>`;
+
+  // ── Globe vertical guides (matching page 1) ───────────────────────────
+  const glUnder = document.getElementById('gridlines-under');
+  glUnder.innerHTML =
+    `<svg width="${vw}" height="${vh * 2}" style="position:absolute;left:0;top:0">` +
+    `<line x1="${globeLeftX}" y1="0" x2="${globeLeftX}" y2="${vh * 2}" stroke="#0F4F32" stroke-width="0.7"/>` +
+    `</svg>`;
+
+  // ── Beyond banner ──────────────────────────────────────────────────────
+  const beyondBanner = document.getElementById('beyond-banner');
+  const bbTop = rh1;
+  const bbHeight = rh2 - rh1;
+  const bbFullHeight = h2 - h1;
+  beyondBanner.style.left = globeLeftX + 'px';
+  beyondBanner.style.top = bbTop + 'px';
+  beyondBanner.style.width = (colX1 - globeLeftX) + 'px';
+  beyondBanner.style.height = bbHeight + 'px';
+  const bbFontSize = Math.max(12, bbFullHeight * 0.7);
+  beyondBanner.querySelector('span').style.fontSize = bbFontSize + 'px';
+  createText.style.fontSize = bbFontSize + 'px';
+  beyondBanner.style.clipPath = `inset(${Math.max(0, rh1 - bbTop)}px 0 ${Math.max(0, (bbTop + bbHeight) - rh2)}px 0)`;
+
+  // ── Photo: scales with guides ──────────────────────────────────────────────
+  const photo1 = document.getElementById('photo1');
+  const visibleW = photoRightDraw - photoLeftDraw;
+  const visibleH = photoBottomDraw - photoTopDraw;
+  photo1.style.left = photoLeftDraw + 'px';
+  photo1.style.top = photoTopDraw + 'px';
+  photo1.style.width = Math.max(0, visibleW) + 'px';
+  photo1.style.height = Math.max(0, visibleH) + 'px';
+  photo1.style.objectPosition = 'top';
+  photo1.style.clipPath = '';
+  photo1.style.transform = '';
+
+  // ── White rectangle on top of dashed lines (delayed) ───────────────────────
+  const wrFullW = photoLeft + photoW - colX1 + 550;
+  const wrFullH = p2d3Final - p2h5Final;
+  const whiteRect = document.getElementById('white-rect');
+  whiteRect.style.left = colX1 + 'px';
+  whiteRect.style.top = p2h5Draw + 'px';
+  whiteRect.style.width = wrFullW + 'px';
+  whiteRect.style.height = wrFullH + 'px';
+  const wrClipRight = Math.max(0, (colX1 + wrFullW) - wrRightX);
+  const wrClipBottom = Math.max(0, (p2h5Draw + wrFullH) - p2d3Draw);
+  whiteRect.style.clipPath = `inset(0 ${wrClipRight}px ${wrClipBottom}px 0)`;
+  whiteRect.style.pointerEvents = expandRaw >= 1 ? 'auto' : 'none';
+
+  // ── Text lines: type on driven by expand animation ──────────────────────────
+  if (expandStarted && !typeStartTime) typeStartTime = performance.now();
+  {
+    const lineTexts = [
+      'My secret talent is that I can make an amazing, beautiful,',
+      'detailed chart in Excel and then IMMEDIATELY forget',
+      'how I did it and never be able to recreate it '
+    ];
+    // Map expandRaw (0→1) to typing progress across all 3 lines
+    const typeT = expandRaw;
+    const lineShare = 1 / 3;
+    for (let i = 0; i < 3; i++) {
+      const line = document.getElementById('tline' + (i + 1));
+      const lineStart = i * lineShare;
+      const lineT = Math.max(0, Math.min(1, (typeT - lineStart) / lineShare));
+      const chars = Math.round(lineT * lineTexts[i].length);
+      if (i === 2 && chars >= lineTexts[2].length && !emojiAdded) {
+        let html = '';
+        for (const ch of lineTexts[2]) html += `<span>${ch === ' ' ? '&nbsp;' : ch}</span>`;
+        html += '<span class="emoji-spring">\u{1F612}</span>';
+        line.innerHTML = html;
+        emojiAdded = true;
+      } else if (i === 2 && emojiAdded) {
+        // keep emoji, don't update
+      } else if (lineT >= 1 && !line.dataset.wrapped) {
+        // Typing done for this line — wrap each char in a span for hover
+        let html = '';
+        for (const ch of lineTexts[i]) html += `<span>${ch === ' ' ? '&nbsp;' : ch}</span>`;
+        line.innerHTML = html;
+        line.dataset.wrapped = '1';
+      } else if (!line.dataset.wrapped) {
+        line.textContent = lineTexts[i].substring(0, chars);
+      }
+    }
+  }
+
+  // ── Exit green fill: wipes down with guide (only after exit phase 2 starts) ─
+  const exitGreen = document.getElementById('exit-green-fill');
+  if (exitT > 0) {
+    exitGreen.style.left = exitGuideX + 'px';
+    exitGreen.style.top = p2h4Draw + 'px';
+    exitGreen.style.width = ((vw - globeLeftX) - exitGuideX) + 'px';
+    exitGreen.style.height = Math.max(0, exitGuideY - p2h4Draw) + 'px';
+    exitGreen.style.clipPath = '';
+    exitGreen.style.display = 'block';
+  } else {
+    exitGreen.style.display = 'none';
+  }
+
+  // ── Exit text: positioned below each dashed line, clipped between lines ─────
+  const exitTextEls = [
+    { el: document.getElementById('exit-text1'), top: exitDash3, clipTop: exitDash3, clipBot: exitDash2 },
+    { el: document.getElementById('exit-text2'), top: exitDash2, clipTop: exitDash2, clipBot: exitDash1 },
+    { el: document.getElementById('exit-text3'), top: exitDash1, clipTop: exitDash1, clipBot: photoBottomDraw, topOffset: -15 },
+  ];
+  const textLeft = colX2DrawExit + 40;
+  for (const { el, top, clipTop, clipBot, topOffset } of exitTextEls) {
+    if (exit2T > 0) {
+      const tOff = topOffset || 0;
+      el.style.left = textLeft + 'px';
+      el.style.top = (top + 5 + tOff) + 'px';
+      el.style.display = 'block';
+      const ct = Math.max(0, clipTop - top - 5 - tOff);
+      const cb = Math.max(0, (top + 5 + tOff + el.offsetHeight) - clipBot);
+      el.style.clipPath = `inset(${ct}px 0 ${cb}px 0)`;
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  // ── Scribble video over "ch" in chart ───────────────────────────────────────
+  const scribbleEl = document.getElementById('scribble');
+  if (exit2T > 0.97 && !scribblePlayed) {
+    scribbleEl.style.opacity = 1;
+    scribbleEl.play();
+    scribblePlayed = true;
+  } else if (exit2T <= 0.97 && scribblePlayed) {
+    scribbleEl.style.opacity = 0;
+    scribbleEl.pause();
+    scribbleEl.currentTime = 0;
+    scribblePlayed = false;
+    scribbleEnded = false;
+    artTextEl.style.color = '#0F4F32';
+  }
+
+  // ── X square: bottom-right corner of photo ─────────────────────────────────
+  const xSquare = document.getElementById('x-square');
+  const xSize = p2h4Draw - photoBottomDraw;
+  xSquare.style.left = photoRightDraw + 'px';
+  xSquare.style.top = photoBottomDraw + 'px';
+  xSquare.style.width = xSize + 'px';
+  xSquare.style.height = xSize + 'px';
+  xSquare.style.fontSize = (xSize * 0.7) + 'px';
+
+  // ── Banner word animation: SCROLL DOWN → CLICK ─────────────────────────────
+  if (exitT > 0.01 && !bannerSwitched) {
+    bannerSwitched = true;
+    bannerSlots.forEach((slot, idx) => {
+      const letterIdx = idx % bannerMaxLen;
+      const delay = letterIdx * 180;
+      const fromEl = slot.querySelector('.bw-from');
+      const toEl = slot.querySelector('.bw-to');
+      setTimeout(() => {
+        fromEl.style.opacity = '0';
+        toEl.style.opacity = '1';
+      }, delay);
+    });
+  } else if (exitT <= 0.01 && bannerSwitched) {
+    bannerSwitched = false;
+    bannerSlots.forEach((slot, idx) => {
+      const letterIdx = idx % bannerMaxLen;
+      const delay = letterIdx * 180;
+      const fromEl = slot.querySelector('.bw-from');
+      const toEl = slot.querySelector('.bw-to');
+      setTimeout(() => {
+        fromEl.style.opacity = '1';
+        toEl.style.opacity = '0';
+      }, delay);
+    });
+  }
+
+  // ── Click banner: strip under photo, cropped to photo edges ─────────────────
+  const bannerH = p2h4Draw - photoBottomDraw;
+  clickBanner.style.left = photoLeft + 'px';
+  clickBanner.style.top = photoBottomDraw + 'px';
+  clickBanner.style.width = Math.max(0, photoRightDraw - photoLeft) + 'px';
+  clickBanner.style.height = bannerH + 'px';
+  clickBanner.style.lineHeight = bannerH + 'px';
+
+  // ── Chart images: stacked in lower-left of photo ────────────────────────────
+  const chartImg = document.getElementById('chart-img1');
+  const chartT1 = Math.max(0, Math.min(1, (expandScroll - 0.5) / 0.5));
+  const chartT2 = Math.max(0, Math.min(1, (expandScroll - 0.625) / 0.375));
+  const chartT3 = Math.max(0, Math.min(1, (expandScroll - 0.75) / 0.25));
+  const chartTranslateX = lerp(-395, 0, chartT1);
+  chartImg.style.left = (globeLeftX + 1) + 'px';
+  chartImg.style.top = (p2d1Draw - 249) + 'px';
+  chartImg.style.transform = `translateX(${chartTranslateX}px)`;
+  const chartImgLeft = globeLeftX + 1 + chartTranslateX;
+  const chartLeftClip = Math.max(0, globeLeftX - chartImgLeft);
+  const chartImgH = chartImg.offsetHeight || 250;
+  const chartBottomClip = Math.max(0, chartImgH - 249);
+  const chartTop = p2d1Draw - 249;
+  const chartBottom = chartTop + chartImgH;
+  const chartWipeClip = Math.max(0, chartBottom - exitDash3);
+  const chartClipBottom1 = Math.max(chartBottomClip, chartWipeClip);
+  chartImg.style.clipPath = `inset(0 0 ${chartClipBottom1}px ${chartLeftClip}px)`;
+  chartImg.style.opacity = exit2T >= 1 ? 0 : 1;
+
+  // ── Chart image 2: at second dashed line, 50px right ──────────────────────
+  const chartImg2 = document.getElementById('chart-img2');
+  const chartTranslateX2 = lerp(-395, 0, chartT2);
+  chartImg2.style.left = (globeLeftX + 66) + 'px';
+  chartImg2.style.top = (p2d2Draw - 249) + 'px';
+  const chartDropY2 = exit2T * 40;
+  chartImg2.style.transform = `translateX(${chartTranslateX2}px) translateY(${chartDropY2}px)`;
+  const chartImg2Left = globeLeftX + 66 + chartTranslateX2;
+  const chartLeftClip2 = Math.max(0, globeLeftX - chartImg2Left);
+  const chartImgH2 = chartImg2.offsetHeight || 250;
+  const chartBottomClip2 = Math.max(0, chartImgH2 - 249);
+  const chartTop2 = p2d2Draw - 249 + chartDropY2;
+  const chartBottom2 = chartTop2 + chartImgH2;
+  const chartWipeClip2 = Math.max(0, chartBottom2 - exitDash2);
+  const chartClipBottom2 = Math.max(chartBottomClip2, chartWipeClip2);
+  chartImg2.style.clipPath = `inset(0 0 ${chartClipBottom2}px ${chartLeftClip2}px)`;
+  chartImg2.style.opacity = exit2T >= 1 ? 0 : 1;
+
+  // ── Chart image 3: at third dashed line, 50px right ───────────────────────
+  const chartImg3 = document.getElementById('chart-img3');
+  const chartTranslateX3 = lerp(-395, 0, chartT3);
+  chartImg3.style.left = (globeLeftX + 141) + 'px';
+  chartImg3.style.top = (p2d3Draw - 249) + 'px';
+  const chartDropY3 = exit2T * 249;
+  chartImg3.style.transform = `translateX(${chartTranslateX3}px) translateY(${chartDropY3}px)`;
+  const chartImg3Left = globeLeftX + 141 + chartTranslateX3;
+  const chartLeftClip3 = Math.max(0, globeLeftX - chartImg3Left);
+  const chartImgH3 = chartImg3.offsetHeight || 250;
+  const chartBottomClip3 = Math.max(0, chartImgH3 - 249);
+  const chartTop3 = p2d3Draw - 249 + chartDropY3;
+  const chartBottom3 = chartTop3 + chartImgH3;
+  const chartWipeClip3 = Math.max(0, chartBottom3 - exitDash1);
+  const chartClipBottom3 = Math.max(chartBottomClip3, chartWipeClip3);
+  chartImg3.style.clipPath = `inset(0 0 ${chartClipBottom3}px ${chartLeftClip3}px)`;
+  chartImg3.style.opacity = exit2T >= 1 ? 0 : 1;
+
+  // ── Username: slides in from left ─────────────────────────────────────────
+  const usernameEl = document.getElementById('username');
+  const usernameT = Math.max(0, (expandScroll - 0.18) / 0.82);
+  const usernameRestX = photoLeft - 100;
+  const usernameX = lerp(-300, usernameRestX, usernameT);
+  const usernameBaseY = lerp(rh3, p2h2, expandScroll) + 100;
+  const usernameExitY = (p2h1 + photoTopDraw) / 2 + 36;
+  const usernameY = lerp(usernameBaseY, usernameExitY, exitT);
+  const usernameScale = expandScroll > 0 ? photoExpandExit / expandScroll : 1;
+  usernameEl.style.left = usernameX + 'px';
+  usernameEl.style.top = usernameY + 'px';
+  usernameEl.style.transform = `scale(${usernameScale})`;
+  usernameEl.style.transformOrigin = 'left top';
+  const uRawH = usernameEl.offsetHeight;
+  const uClipLeftPx = Math.max(0, (globeLeftX - usernameX) / usernameScale);
+  const uClipBottomPx = Math.max(0, (usernameY + uRawH * usernameScale - photoBottomDraw) / usernameScale);
+  usernameEl.style.clipPath = `inset(0px 0px ${uClipBottomPx}px ${uClipLeftPx}px)`;
+
+  // Letter-by-letter fade up
+  const letters = usernameEl.querySelectorAll('span');
+  const totalLetters = letters.length;
+  const staggerWindow = 0.15; // portion of scroll each letter takes to fade in
+  for (let i = 0; i < totalLetters; i++) {
+    const start = (i / totalLetters) * (1 - staggerWindow);
+    const t = Math.max(0, Math.min(1, (usernameT - start) / staggerWindow));
+    letters[i].style.opacity = t;
+    letters[i].style.transform = `translateY(${(1 - t) * 6}px)`;
+    letters[i].style.display = 'inline-block';
+  }
+
+  // ── Start boxes: visible at beginning, fade out with expand ──────────────
+  const startBox1 = document.getElementById('start-box1');
+  const startBox2 = document.getElementById('start-box2');
+  startBox1.style.left = colX1 + 'px';
+  startBox1.style.top = (rh3 + 387.5) + 'px';
+  startBox1.style.width = Math.max(0, sbGuide1X - colX1) + 'px';
+  const sb1TopClip = Math.max(0, sbGuide1Y - (rh3 + 387.5));
+  startBox1.style.clipPath = `inset(${sb1TopClip}px 0 0 0)`;
+  startBox2.style.left = sbGuide1X + 'px';
+  startBox2.style.top = (rh3 + 410.5) + 'px';
+  startBox2.style.width = Math.max(0, sbGuide2X - sbGuide1X) + 'px';
+  const sb2TopClip = Math.max(0, sbGuide2Y - (rh3 + 410.5));
+  startBox2.style.clipPath = `inset(${sb2TopClip}px 0 0 0)`;
+
+  requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+
+// ─── Embedded spreadsheet ────────────────────────────────────────────────────
+(function() {
+  const S_ROWS = 65;
+  const S_COLS = 41;
+  const sheetTable = document.getElementById('sheetTable');
+  const exitGreenEl = document.getElementById('exit-green-fill');
+
+  function colLetter(c) {
+    let s = '', n = c;
+    while (n >= 0) { s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26) - 1; }
+    return s;
+  }
+
+  // Build table
+  const thead = document.createElement('thead');
+  const hRow = document.createElement('tr');
+  const corner = document.createElement('th');
+  corner.className = 'sh-corner';
+  hRow.appendChild(corner);
+  for (let c = 0; c < S_COLS; c++) {
+    const th = document.createElement('th');
+    th.className = 'sh-col';
+    th.textContent = colLetter(c);
+    th.dataset.col = c;
+    hRow.appendChild(th);
+  }
+  thead.appendChild(hRow);
+  sheetTable.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for (let r = 0; r < S_ROWS; r++) {
+    const tr = document.createElement('tr');
+    const rh = document.createElement('th');
+    rh.className = 'sh-row';
+    rh.textContent = r + 1;
+    rh.dataset.row = r;
+    tr.appendChild(rh);
+    for (let c = 0; c < S_COLS; c++) {
+      const td = document.createElement('td');
+      td.className = 'sh-cell';
+      td.dataset.row = r;
+      td.dataset.col = c;
+      const inp = document.createElement('input');
+      inp.className = 'sh-editor';
+      inp.type = 'text';
+      inp.spellcheck = false;
+      inp.maxLength = 5;
+      td.appendChild(inp);
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  sheetTable.appendChild(tbody);
+
+  // Selection state
+  let dragging = false, ancR = 0, ancC = 0, curR = 0, curC = 0, editCell = null;
+  let activeColor = '#73D961';
+  let eraseMode = false;
+
+  // Color swatch selection
+  document.querySelectorAll('.color-swatch').forEach(s => {
+    s.addEventListener('click', () => {
+      document.querySelectorAll('.color-swatch').forEach(sw => sw.classList.remove('swatch-active'));
+      s.classList.add('swatch-active');
+      activeColor = s.dataset.color;
+    });
+  });
+
+  function getC(r, c) { return sheetTable.querySelector(`td[data-row="${r}"][data-col="${c}"]`); }
+
+  function clearSel() {
+    sheetTable.querySelectorAll('.sh-hl,.sh-anchor').forEach(e => e.classList.remove('sh-hl','sh-anchor'));
+    sheetTable.querySelectorAll('.sh-active').forEach(e => e.classList.remove('sh-active'));
+  }
+
+  function hlCell(cell) {
+    if (!cell) return;
+    cell.classList.add('sh-hl');
+    cell.style.background = activeColor;
+    cell.style.borderColor = activeColor;
+    const c = cell.dataset.col, r = cell.dataset.row;
+    const colH = sheetTable.querySelector(`th.sh-col[data-col="${c}"]`);
+    const rowH = sheetTable.querySelector(`th.sh-row[data-row="${r}"]`);
+    if (colH) colH.classList.add('sh-active');
+    if (rowH) rowH.classList.add('sh-active');
+  }
+
+  function stopEdit() {
+    if (!editCell) return;
+    const inp = editCell.querySelector('.sh-editor');
+    const val = inp.value;
+    editCell.dataset.value = val;
+    editCell.classList.remove('sh-editing');
+    editCell.childNodes.forEach(n => { if (n.nodeType === 3) n.remove(); });
+    if (val) editCell.insertBefore(document.createTextNode(val), editCell.firstChild);
+    editCell = null;
+  }
+
+  function startEdit(cell) {
+    stopEdit();
+    editCell = cell;
+    cell.classList.add('sh-editing');
+    const inp = cell.querySelector('.sh-editor');
+    inp.value = cell.dataset.value || '';
+    inp.focus();
+  }
+
+  function eraseCell(cell) {
+    if (!cell || !cell.classList.contains('sh-hl')) return;
+    let opacity = parseFloat(cell.style.opacity);
+    if (isNaN(opacity)) opacity = 1;
+    opacity = Math.max(0, opacity - 0.2);
+    cell.style.opacity = opacity;
+    if (opacity <= 0) {
+      cell.style.opacity = '';
+      cell.style.background = '';
+      cell.style.borderColor = '';
+      cell.classList.remove('sh-hl', 'sh-anchor');
+      cell.dataset.value = '';
+      cell.childNodes.forEach(n => { if (n.nodeType === 3) n.remove(); });
+    }
+  }
+
+  function deactivateEraseMode() {
+    eraseMode = false;
+    const eraseBtn = document.getElementById('click-label7');
+    eraseBtn.classList.remove('erase-active');
+  }
+
+  // Mouse events on table — each cell highlights independently
+  sheetTable.addEventListener('mousedown', e => {
+    const td = e.target.closest('td.sh-cell');
+    if (!td) return;
+    if (eraseMode) {
+      dragging = true;
+      eraseCell(td);
+      e.preventDefault();
+      return;
+    }
+    stopEdit();
+    dragging = true;
+    ancR = +td.dataset.row; ancC = +td.dataset.col;
+    curR = ancR; curC = ancC;
+    td.classList.add('sh-anchor');
+    hlCell(td);
+    e.preventDefault();
+  });
+
+  sheetTable.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const td = e.target.closest('td.sh-cell');
+    if (!td) return;
+    if (eraseMode) {
+      eraseCell(td);
+      return;
+    }
+    const r = +td.dataset.row, c = +td.dataset.col;
+    if (r !== curR || c !== curC) {
+      curR = r; curC = c;
+      hlCell(td);
+    }
+  });
+
+  document.addEventListener('mouseup', () => { dragging = false; });
+
+  sheetTable.addEventListener('dblclick', e => {
+    const td = e.target.closest('td.sh-cell');
+    if (td) startEdit(td);
+  });
+
+  // Keyboard
+  sheetTable.addEventListener('keydown', e => {
+    if (editCell) {
+      if (e.key === 'Enter') { stopEdit(); if (ancR < S_ROWS-1) { ancR++; curR=ancR; hlRange(ancR,ancC,ancR,ancC); } e.preventDefault(); }
+      else if (e.key === 'Escape') { editCell.classList.remove('sh-editing'); editCell = null; e.preventDefault(); }
+      else if (e.key === 'Tab') { stopEdit(); if(ancC<S_COLS-1){ancC++;curC=ancC;hlRange(ancR,ancC,ancR,ancC);} e.preventDefault(); }
+      return;
+    }
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key)) {
+      e.preventDefault();
+      if (e.key==='ArrowUp') ancR=Math.max(0,ancR-1);
+      else if (e.key==='ArrowDown'||e.key==='Enter') ancR=Math.min(S_ROWS-1,ancR+1);
+      else if (e.key==='ArrowLeft') ancC=Math.max(0,ancC-1);
+      else if (e.key==='ArrowRight'||e.key==='Tab') ancC=Math.min(S_COLS-1,ancC+1);
+      curR=ancR; curC=ancC;
+      hlRange(ancR,ancC,ancR,ancC);
+      const cell = getC(ancR,ancC);
+      if (cell) cell.scrollIntoView({block:'nearest',inline:'nearest'});
+    }
+    if (e.key.length===1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const cell = getC(ancR,ancC);
+      if (cell) { cell.dataset.value=''; cell.childNodes.forEach(n=>{if(n.nodeType===3)n.remove();}); startEdit(cell); cell.querySelector('.sh-editor').value=e.key; }
+    }
+    if (e.key==='Delete'||e.key==='Backspace') {
+      const minR=Math.min(ancR,curR),maxR=Math.max(ancR,curR),minC=Math.min(ancC,curC),maxC=Math.max(ancC,curC);
+      for(let r=minR;r<=maxR;r++) for(let c=minC;c<=maxC;c++){const cell=getC(r,c);if(cell){cell.dataset.value='';cell.childNodes.forEach(n=>{if(n.nodeType===3)n.remove();});}}
+      e.preventDefault();
+    }
+  });
+
+  // Activate sheet once green fill is visible
+  let sheetActive = false;
+  function checkSheet() {
+    const w = parseFloat(exitGreenEl.style.width) || 0;
+    const h = parseFloat(exitGreenEl.style.height) || 0;
+    if (w > 50 && h > 50 && !sheetActive) {
+      exitGreenEl.classList.add('active-sheet');
+      sheetActive = true;
+    } else if ((w <= 50 || h <= 50) && sheetActive) {
+      exitGreenEl.classList.remove('active-sheet');
+      sheetActive = false;
+    }
+    requestAnimationFrame(checkSheet);
+  }
+  checkSheet();
+
+  const artComments = [
+    'Hate how good this is.',
+    'Annoyingly strong.',
+    'This slaps. Unfortunately.',
+    "You didn't have to go this hard.",
+    'Rude amount of talent here.',
+    'Disgusting. Keep it.',
+    'This is stupid good.',
+    'Unfairly effective.',
+    "It's almost irritating how solid this is.",
+    'Painfully clean.',
+    'This is the keeper. Stop touching it.',
+    'Brutal in the best way.',
+    "You're making the rest of us look bad.",
+    'This works. Like, really works.',
+    'Offensive levels of polish.',
+    'Nasty. In a good way.',
+    'Gross. Frame it.',
+    "Don't improve it. You'll ruin it.",
+    'Too good to be accidental.',
+    "I'm mad at how right this feels.",
+    'Suspiciously strong choice.',
+    'Overqualified for this brief.',
+    'This is the one. End of discussion.',
+    'You nailed it. I hate that you nailed it.',
+    'Keep. Ship. Walk away.'
+  ];
+  let commentIndex = Math.floor(Math.random() * artComments.length);
+
+  // Save button captures excel grid art as thumbnail (max 20)
+  document.getElementById('click-label2').addEventListener('click', () => {
+    const thumbContainer = document.getElementById('saved-thumbs');
+    if (thumbContainer.querySelectorAll('.thumb-wrap').length >= 20) return;
+    const cells = sheetTable.querySelectorAll('td.sh-cell');
+    if (!cells.length) return;
+    const cols = S_COLS;
+    const rows = S_ROWS;
+    const dpr = 3;
+    const cellW = 40 * dpr, cellH = 20 * dpr, hdrW = 34 * dpr, hdrH = 20 * dpr;
+    const cw = hdrW + cols * cellW;
+    const ch = hdrH + rows * cellH;
+    const canvas = document.createElement('canvas');
+    canvas.width = cw;
+    canvas.height = ch;
+    canvas.style.width = '100px';
+    canvas.style.height = '100px';
+    const ctx = canvas.getContext('2d');
+    // Fill background
+    ctx.fillStyle = '#0F4F32';
+    ctx.fillRect(0, 0, cw, ch);
+    // Draw corner header
+    ctx.fillStyle = '#0a3d26';
+    ctx.fillRect(0, 0, hdrW, hdrH);
+    // Draw column headers
+    ctx.font = `600 ${10 * dpr}px Segoe UI, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let c = 0; c < cols; c++) {
+      const x = hdrW + c * cellW;
+      ctx.fillStyle = '#0a3d26';
+      ctx.fillRect(x, 0, cellW, hdrH);
+      ctx.strokeStyle = '#1a6b45';
+      ctx.lineWidth = dpr;
+      ctx.strokeRect(x, 0, cellW, hdrH);
+      ctx.fillStyle = '#73D961';
+      let letter = '', n = c;
+      while (n >= 0) { letter = String.fromCharCode(65 + (n % 26)) + letter; n = Math.floor(n / 26) - 1; }
+      ctx.fillText(letter, x + cellW / 2, hdrH / 2);
+    }
+    // Draw row headers
+    for (let r = 0; r < rows; r++) {
+      const y = hdrH + r * cellH;
+      ctx.fillStyle = '#0a3d26';
+      ctx.fillRect(0, y, hdrW, cellH);
+      ctx.strokeStyle = '#1a6b45';
+      ctx.lineWidth = dpr;
+      ctx.strokeRect(0, y, hdrW, cellH);
+      ctx.fillStyle = '#73D961';
+      ctx.fillText(String(r + 1), hdrW / 2, y + cellH / 2);
+    }
+    // Draw all cells with their colors, text, and highlights
+    cells.forEach(c => {
+      const r = +c.dataset.row;
+      const col = +c.dataset.col;
+      const x = hdrW + col * cellW;
+      const y = hdrH + r * cellH;
+      if (c.classList.contains('sh-hl')) {
+        ctx.fillStyle = c.style.background || '#73D961';
+      } else {
+        ctx.fillStyle = '#0F4F32';
+      }
+      ctx.fillRect(x, y, cellW, cellH);
+      // Cell border — highlighted cells get their color border
+      if (c.classList.contains('sh-hl') && c.style.borderColor) {
+        ctx.strokeStyle = c.style.borderColor;
+      } else {
+        ctx.strokeStyle = '#1a6b45';
+      }
+      ctx.lineWidth = dpr;
+      ctx.strokeRect(x, y, cellW, cellH);
+      // Draw anchor/editing outline
+      if (c.classList.contains('sh-anchor') || c.classList.contains('sh-editing')) {
+        ctx.strokeStyle = '#73D961';
+        ctx.lineWidth = 2 * dpr;
+        ctx.strokeRect(x + dpr, y + dpr, cellW - 2 * dpr, cellH - 2 * dpr);
+      }
+      // Draw cell text
+      const val = c.dataset.value || '';
+      if (val) {
+        ctx.fillStyle = '#fff';
+        ctx.font = `${10 * dpr}px Segoe UI, sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(val, x + 2 * dpr, y + cellH / 2, cellW - 4 * dpr);
+      }
+    });
+    // Draw active column/row highlights
+    sheetTable.querySelectorAll('th.sh-col.sh-active').forEach(th => {
+      const ci = +th.dataset.col;
+      const x = hdrW + ci * cellW;
+      ctx.fillStyle = '#135a38';
+      ctx.fillRect(x, 0, cellW, hdrH);
+      ctx.strokeStyle = '#1a6b45';
+      ctx.lineWidth = dpr;
+      ctx.strokeRect(x, 0, cellW, hdrH);
+      ctx.fillStyle = '#fff';
+      ctx.font = `600 ${10 * dpr}px Segoe UI, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      let letter = '', n = ci;
+      while (n >= 0) { letter = String.fromCharCode(65 + (n % 26)) + letter; n = Math.floor(n / 26) - 1; }
+      ctx.fillText(letter, x + cellW / 2, hdrH / 2);
+    });
+    sheetTable.querySelectorAll('th.sh-row.sh-active').forEach(th => {
+      const ri = +th.dataset.row;
+      const y = hdrH + ri * cellH;
+      ctx.fillStyle = '#135a38';
+      ctx.fillRect(0, y, hdrW, cellH);
+      ctx.strokeStyle = '#1a6b45';
+      ctx.lineWidth = dpr;
+      ctx.strokeRect(0, y, hdrW, cellH);
+      ctx.fillStyle = '#fff';
+      ctx.font = `600 ${10 * dpr}px Segoe UI, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(ri + 1), hdrW / 2, y + cellH / 2);
+    });
+    // Assign a cycling random comment
+    canvas._comment = artComments[commentIndex];
+    commentIndex = (commentIndex + 1) % artComments.length;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'thumb-wrap';
+    wrap.appendChild(canvas);
+
+    // Click thumbnail to select and display on grid, stacking overlays
+    wrap.addEventListener('click', () => {
+      const wasSelected = wrap.classList.contains('thumb-selected');
+      if (wasSelected) {
+        wrap.classList.remove('thumb-selected');
+        if (wrap._overlay) {
+          const ol = wrap._overlay;
+          ol.style.opacity = '0';
+          setTimeout(() => { if (ol.parentNode) ol.parentNode.removeChild(ol); }, 400);
+          wrap._overlay = null;
+        }
+        return;
+      }
+      wrap.classList.add('thumb-selected');
+
+      const container = document.getElementById('thumb-overlays');
+      const greenEl = document.getElementById('exit-green-fill');
+      const gw = parseFloat(greenEl.style.width) || 0;
+      const gh = parseFloat(greenEl.style.height) || 0;
+      const scale = 0.75;
+      const ow = gw * scale;
+      const oh = gh * scale;
+      const baseX = (gw - ow) / 2;
+      const baseY = (gh - oh) / 2;
+
+      // Count currently selected thumbnails for offset
+      const selected = document.querySelectorAll('.thumb-wrap.thumb-selected').length - 1;
+      const offsetX = selected * 20;
+      const offsetY = selected * 20;
+
+      const frame = document.createElement('div');
+      frame.className = 'overlay-frame';
+      frame.style.width = ow + 'px';
+      frame.style.height = oh + 'px';
+      frame.style.left = (baseX + offsetX) + 'px';
+      frame.style.top = (baseY + offsetY) + 'px';
+      frame.style.opacity = '0';
+      frame.style.transform = 'scale(0.1)';
+
+      const overlay = document.createElement('canvas');
+      overlay.width = canvas.width;
+      overlay.height = canvas.height;
+      const octx = overlay.getContext('2d');
+      octx.drawImage(canvas, 0, 0);
+
+      const closeBtn = document.createElement('div');
+      closeBtn.className = 'overlay-close';
+      closeBtn.textContent = '\u2715';
+      closeBtn.addEventListener('click', () => {
+        wrap.classList.remove('thumb-selected');
+        frame.style.opacity = '0';
+        setTimeout(() => { if (frame.parentNode) frame.parentNode.removeChild(frame); }, 400);
+        wrap._overlay = null;
+      });
+
+      const expandBtn = document.createElement('div');
+      expandBtn.className = 'overlay-btn overlay-expand';
+      expandBtn.innerHTML = '&#x2197;';
+      expandBtn.addEventListener('click', () => {
+        const dl = document.createElement('a');
+        dl.download = 'excel-art.png';
+        dl.href = canvas.toDataURL('image/png');
+        dl.click();
+      });
+
+      const trashBtn = document.createElement('div');
+      trashBtn.className = 'overlay-btn overlay-trash';
+      trashBtn.innerHTML = '&#x1F5D1;';
+      trashBtn.addEventListener('click', () => {
+        wrap.classList.remove('thumb-selected');
+        frame.style.opacity = '0';
+        setTimeout(() => { if (frame.parentNode) frame.parentNode.removeChild(frame); }, 400);
+        wrap._overlay = null;
+        // Remove the thumbnail itself
+        setTimeout(() => { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 400);
+      });
+
+      frame.appendChild(overlay);
+      const commentEl = document.createElement('div');
+      commentEl.className = 'overlay-comment';
+      commentEl.textContent = canvas._comment;
+
+      frame.appendChild(closeBtn);
+      frame.appendChild(commentEl);
+      frame.appendChild(expandBtn);
+      frame.appendChild(trashBtn);
+      container.appendChild(frame);
+      wrap._overlay = frame;
+
+      // Animate in
+      requestAnimationFrame(() => {
+        frame.style.opacity = '1';
+        frame.style.transform = 'translate(0px, 0px)';
+      });
+    });
+
+    document.getElementById('saved-thumbs').appendChild(wrap);
+  });
+
+  // Draggable overlay frames — all connected, drift back on release
+  (function() {
+    let dragFrame = null, startX = 0, startY = 0;
+    const origPositions = new Map();
+
+    document.addEventListener('mousedown', (e) => {
+      const frame = e.target.closest('.overlay-frame');
+      if (!frame || e.target.closest('.overlay-close') || e.target.closest('.overlay-btn')) return;
+      dragFrame = frame;
+      startX = e.clientX;
+      startY = e.clientY;
+      // Store original positions of all frames
+      const frames = document.querySelectorAll('.overlay-frame');
+      frames.forEach(f => {
+        f.style.transition = 'none';
+        origPositions.set(f, {
+          left: parseFloat(f.style.left) || 0,
+          top: parseFloat(f.style.top) || 0
+        });
+      });
+      frame.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!dragFrame) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      const container = document.getElementById('thumb-overlays');
+      const frames = Array.from(container.querySelectorAll('.overlay-frame'));
+      const dragIdx = frames.indexOf(dragFrame);
+      const total = frames.length;
+
+      frames.forEach((f, i) => {
+        const orig = origPositions.get(f);
+        if (!orig) return;
+        let factor;
+        if (f === dragFrame) {
+          factor = 1;
+        } else {
+          // Closer layers move more, further layers move less
+          const dist = Math.abs(i - dragIdx);
+          factor = Math.max(0.1, 1 - dist * 0.25);
+        }
+        f.style.left = (orig.left + dx * factor) + 'px';
+        f.style.top = (orig.top + dy * factor) + 'px';
+      });
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!dragFrame) return;
+      dragFrame.style.cursor = '';
+      // Drift all frames back to original positions
+      const frames = document.querySelectorAll('.overlay-frame');
+      frames.forEach(f => {
+        const orig = origPositions.get(f);
+        if (!orig) return;
+        f.style.transition = 'left 0.8s cubic-bezier(0.16, 1, 0.3, 1), top 0.8s cubic-bezier(0.16, 1, 0.3, 1)';
+        f.style.left = orig.left + 'px';
+        f.style.top = orig.top + 'px';
+        setTimeout(() => { f.style.transition = ''; }, 800);
+      });
+      dragFrame = null;
+      origPositions.clear();
+    });
+  })();
+
+  // Erase button clears all highlighted cells with random staggered fade
+  // Erase toggle button
+  document.getElementById('click-label7').addEventListener('click', () => {
+    if (eraseMode) {
+      deactivateEraseMode();
+    } else {
+      eraseMode = true;
+      document.getElementById('click-label7').classList.add('erase-active');
+    }
+  });
+
+  // Deactivate erase mode when other buttons are clicked
+  ['click-label4','click-label1','click-label5','click-label6','click-label2'].forEach(id => {
+    document.getElementById(id).addEventListener('click', () => { deactivateEraseMode(); });
+  });
+
+  document.getElementById('click-label1').addEventListener('click', () => {
+    // Temporarily switch to auto layout to get current widths, then animate back
+    const cols = sheetTable.querySelectorAll('th.sh-col');
+    const currentWidths = Array.from(cols).map(th => th.offsetWidth);
+
+    const highlighted = sheetTable.querySelectorAll('td.sh-cell.sh-hl');
+    const fadeDuration = 1.2;
+    highlighted.forEach((cell) => {
+      const delay = Math.random() * 1500;
+      setTimeout(() => {
+        cell.style.transition = `background ${fadeDuration}s ease, border-color ${fadeDuration}s ease, opacity ${fadeDuration}s ease`;
+        cell.style.background = '';
+        cell.style.borderColor = '';
+        cell.classList.remove('sh-hl', 'sh-anchor');
+        cell.dataset.value = '';
+        cell.childNodes.forEach(n => { if (n.nodeType === 3) n.remove(); });
+        setTimeout(() => { cell.style.transition = ''; }, fadeDuration * 1000);
+      }, delay);
+    });
+    sheetTable.querySelectorAll('.sh-active').forEach(e => e.classList.remove('sh-active'));
+
+    // After all cells cleared, animate columns back to default width
+    const maxDelay = 1500 + fadeDuration * 1000;
+    cols.forEach((th, i) => {
+      if (currentWidths[i] > 40) {
+        th.style.width = currentWidths[i] + 'px';
+        th.style.minWidth = currentWidths[i] + 'px';
+        setTimeout(() => {
+          th.style.transition = 'width 0.8s ease-out, min-width 0.8s ease-out';
+          th.style.width = '40px';
+          th.style.minWidth = '40px';
+          setTimeout(() => {
+            th.style.transition = '';
+            th.style.width = '';
+            th.style.minWidth = '';
+          }, 800);
+        }, maxDelay);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
