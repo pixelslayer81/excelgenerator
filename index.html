@@ -1164,11 +1164,11 @@ function frame() {
   const exitGreen = document.getElementById('exit-green-fill');
   if (exitT > 0) {
     exitGreen.style.left = exitGuideX + 'px';
-    const greenTopY = Math.min(p2h4Draw, photoBottomDraw, p2h5Draw, p2h6Draw, p2d1Draw, p2d2Draw, p2d3Draw);
-    exitGreen.style.top = greenTopY + 'px';
+    exitGreen.style.top = p2h4Draw + 'px';
     exitGreen.style.width = ((vw - globeLeftX) - exitGuideX) + 'px';
-    exitGreen.style.height = Math.max(0, exitGuideY - greenTopY) + 'px';
-    exitGreen.style.clipPath = '';
+    exitGreen.style.height = Math.max(0, exitGuideY - p2h4Draw) + 'px';
+    exitGreen.style.clipPath = `inset(0 0 0 0)`;
+    exitGreen.style.opacity = Math.min(1, exitT * 5);
     exitGreen.style.display = 'block';
   } else {
     exitGreen.style.display = 'none';
